@@ -2,7 +2,6 @@
 
 Aplikasi Dashboard Kesehatan Pegawai Bank Indonesia yang dibangun berdasarkan **Software Design Document (SDD) - BI WELL** dan data riil MCU dari `Dummy_Dataset_MCU_BI.xlsx`.
 
-🌐 **Live Deployed App (Surge)**: [https://bi-well-mcu.surge.sh](https://bi-well-mcu.surge.sh)  
 📦 **GitHub Repository**: [https://github.com/AndaruPratamaP/bi-well-dashboard](https://github.com/AndaruPratamaP/bi-well-dashboard)
 
 ---
@@ -63,7 +62,7 @@ Aplikasi Dashboard Kesehatan Pegawai Bank Indonesia yang dibangun berdasarkan **
 - **Frontend**: React 18, TypeScript, Vite 5
 - **Styling**: Tailwind CSS, Lucide React Icons
 - **Visualisasi Data**: Apache ECharts (`echarts` & `echarts-for-react`)
-- **Deployment**: Surge.sh (Free global CDN static publishing)
+- **Deployment**: Vercel (Edge Network & Serverless)
 
 ---
 
@@ -75,8 +74,7 @@ Aplikasi Dashboard Kesehatan Pegawai Bank Indonesia yang dibangun berdasarkan **
    ```
    Aplikasi akan berjalan di: [http://localhost:3000](http://localhost:3000)
 
-2. **Build untuk Produksi & Deploy**:
+2. **Build untuk Produksi**:
    ```bash
    npm run build
-   npx surge dist bi-well-mcu.surge.sh
    ```
