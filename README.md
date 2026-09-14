@@ -2,7 +2,8 @@
 
 Aplikasi Dashboard Kesehatan Pegawai Bank Indonesia yang dibangun berdasarkan **Software Design Document (SDD) - BI WELL** dan data riil MCU dari `Dummy_Dataset_MCU_BI.xlsx`.
 
-🌐 **Live Deployed App**: [https://bi-well-mcu.surge.sh](https://bi-well-mcu.surge.sh)
+🌐 **Live Deployed App (Surge)**: [https://bi-well-mcu.surge.sh](https://bi-well-mcu.surge.sh)  
+📦 **GitHub Repository**: [https://github.com/AndaruPratamaP/bi-well-dashboard](https://github.com/AndaruPratamaP/bi-well-dashboard)
 
 ---
 
