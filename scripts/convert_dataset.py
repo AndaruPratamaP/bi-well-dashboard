@@ -18,6 +18,8 @@ def convert_mcu_data():
     # Standardize types and strings
     pegawai['NIP'] = pegawai['NIP'].astype(str)
     pegawai['Tanggal_Lahir'] = pegawai['Tanggal_Lahir'].astype(str)
+    # SDD Requirement: Rename DKEB -> DKEM, DTI -> DEIH
+    pegawai['Departemen'] = pegawai['Departemen'].replace({'DKEB': 'DKEM', 'DTI': 'DEIH'})
 
     mcu_rec['NIP'] = mcu_rec['NIP'].astype(str)
     mcu_rec['Tanggal_MCU'] = mcu_rec['Tanggal_MCU'].astype(str)

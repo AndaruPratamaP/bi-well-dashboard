@@ -47,7 +47,7 @@
       "Nama": "Pegawai 7",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1986-06-11",
-      "Departemen": "DKEB"
+      "Departemen": "DKEM"
     },
     {
       "NIP": "100008",
@@ -61,7 +61,7 @@
       "Nama": "Pegawai 9",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1990-07-09",
-      "Departemen": "DKEB"
+      "Departemen": "DKEM"
     },
     {
       "NIP": "100010",
@@ -75,7 +75,7 @@
       "Nama": "Pegawai 11",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1982-11-09",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100012",
@@ -110,14 +110,14 @@
       "Nama": "Pegawai 16",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1991-10-31",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100017",
       "Nama": "Pegawai 17",
       "Jenis_Kelamin": "P",
       "Tanggal_Lahir": "1986-12-16",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100018",
@@ -131,21 +131,21 @@
       "Nama": "Pegawai 19",
       "Jenis_Kelamin": "P",
       "Tanggal_Lahir": "1987-11-18",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100020",
       "Nama": "Pegawai 20",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1983-12-11",
-      "Departemen": "DKEB"
+      "Departemen": "DKEM"
     },
     {
       "NIP": "100021",
       "Nama": "Pegawai 21",
       "Jenis_Kelamin": "P",
       "Tanggal_Lahir": "1985-12-02",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100022",
@@ -180,7 +180,7 @@
       "Nama": "Pegawai 26",
       "Jenis_Kelamin": "P",
       "Tanggal_Lahir": "1988-11-01",
-      "Departemen": "DKEB"
+      "Departemen": "DKEM"
     },
     {
       "NIP": "100027",
@@ -215,7 +215,7 @@
       "Nama": "Pegawai 31",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1987-11-05",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100032",
@@ -229,7 +229,7 @@
       "Nama": "Pegawai 33",
       "Jenis_Kelamin": "P",
       "Tanggal_Lahir": "1983-02-17",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100034",
@@ -257,7 +257,7 @@
       "Nama": "Pegawai 37",
       "Jenis_Kelamin": "P",
       "Tanggal_Lahir": "1990-07-12",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100038",
@@ -278,21 +278,21 @@
       "Nama": "Pegawai 40",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1986-08-20",
-      "Departemen": "DKEB"
+      "Departemen": "DKEM"
     },
     {
       "NIP": "100041",
       "Nama": "Pegawai 41",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1989-02-09",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100042",
       "Nama": "Pegawai 42",
       "Jenis_Kelamin": "L",
       "Tanggal_Lahir": "1994-05-02",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100043",
@@ -306,14 +306,14 @@
       "Nama": "Pegawai 44",
       "Jenis_Kelamin": "P",
       "Tanggal_Lahir": "1982-07-04",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100045",
       "Nama": "Pegawai 45",
       "Jenis_Kelamin": "P",
       "Tanggal_Lahir": "1983-09-24",
-      "Departemen": "DTI"
+      "Departemen": "DEIH"
     },
     {
       "NIP": "100046",

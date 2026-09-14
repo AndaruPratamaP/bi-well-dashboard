@@ -521,7 +521,7 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
               className="text-xs font-semibold px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center gap-1.5"
             >
               <History className="w-3.5 h-3.5" />
-              <span>{showHistoryColumns ? 'Sembunyikan Riwayat' : 'Bandingkan 3 Tahun'}</span>
+              <span>{showHistoryColumns ? 'Tampilkan 1 Tahun Saja' : 'Bandingkan 3 Tahun (2024 - 2026)'}</span>
             </button>
           </div>
         </div>
@@ -565,16 +565,24 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
                       <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-700 uppercase font-semibold text-[11px]">
                         <tr>
                           <th className="px-5 py-3">Jenis Pemeriksaan</th>
-                          {showHistoryColumns && (
+                          {showHistoryColumns ? (
                             <>
-                              <th className="px-4 py-3 text-center">Hasil 2024</th>
-                              <th className="px-4 py-3 text-center">Hasil 2025</th>
+                              <th className={`px-4 py-3 text-center ${selectedYear === 2024 ? 'bg-bi-100/70 font-black text-bi-950 border-x border-bi-200' : ''}`}>
+                                Hasil 2024
+                              </th>
+                              <th className={`px-4 py-3 text-center ${selectedYear === 2025 ? 'bg-bi-100/70 font-black text-bi-950 border-x border-bi-200' : ''}`}>
+                                Hasil 2025
+                              </th>
+                              <th className={`px-4 py-3 text-center ${selectedYear === 2026 ? 'bg-bi-100/70 font-black text-bi-950 border-x border-bi-200' : ''}`}>
+                                Hasil 2026
+                              </th>
                             </>
+                          ) : (
+                            <th className="px-4 py-3 text-center bg-bi-50/50">Hasil {selectedYear}</th>
                           )}
-                          <th className="px-4 py-3 text-center bg-bi-50/50">Hasil {selectedYear}</th>
                           <th className="px-4 py-3 text-center">Nilai Rujukan</th>
                           <th className="px-4 py-3 text-center">Satuan</th>
-                          <th className="px-4 py-3 text-center">Status</th>
+                          <th className="px-4 py-3 text-center">Status ({selectedYear})</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -582,6 +590,7 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
                           const isCurrentAbnormal = row.isAbnormal;
                           const hist2024 = row.history.find(h => h.tahun === 2024);
                           const hist2025 = row.history.find(h => h.tahun === 2025);
+                          const hist2026 = row.history.find(h => h.tahun === 2026);
 
                           return (
                             <tr
@@ -594,27 +603,41 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
                                 {row.namaParameter}
                               </td>
 
-                              {showHistoryColumns && (
+                              {showHistoryColumns ? (
                                 <>
-                                  <td className="px-4 py-3 text-center font-medium text-slate-600">
+                                  <td
+                                    className={`px-4 py-3 text-center ${
+                                      hist2024?.status !== 'Normal' ? 'font-extrabold text-red-600' : 'text-slate-700 font-medium'
+                                    } ${selectedYear === 2024 ? 'bg-bi-50/50 border-x border-bi-100 font-bold' : ''}`}
+                                  >
                                     {hist2024 ? hist2024.nilai : '-'}
                                   </td>
-                                  <td className="px-4 py-3 text-center font-medium text-slate-600">
+                                  <td
+                                    className={`px-4 py-3 text-center ${
+                                      hist2025?.status !== 'Normal' ? 'font-extrabold text-red-600' : 'text-slate-700 font-medium'
+                                    } ${selectedYear === 2025 ? 'bg-bi-50/50 border-x border-bi-100 font-bold' : ''}`}
+                                  >
                                     {hist2025 ? hist2025.nilai : '-'}
                                   </td>
+                                  <td
+                                    className={`px-4 py-3 text-center ${
+                                      hist2026?.status !== 'Normal' ? 'font-extrabold text-red-600' : 'text-slate-700 font-medium'
+                                    } ${selectedYear === 2026 ? 'bg-bi-50/50 border-x border-bi-100 font-bold' : ''}`}
+                                  >
+                                    {hist2026 ? hist2026.nilai : '-'}
+                                  </td>
                                 </>
+                              ) : (
+                                <td
+                                  className={`px-4 py-3 text-center ${
+                                    isCurrentAbnormal
+                                      ? 'font-extrabold text-red-600 text-sm bg-red-100/50'
+                                      : 'font-bold text-slate-900 bg-bi-50/30'
+                                  }`}
+                                >
+                                  {row.hasilTerpilih}
+                                </td>
                               )}
-
-                              {/* SDD Rule: "Nilai yang di luar normal dicetak tebal dengan warna merah." */}
-                              <td
-                                className={`px-4 py-3 text-center ${
-                                  isCurrentAbnormal
-                                    ? 'font-extrabold text-red-600 text-sm bg-red-100/50'
-                                    : 'font-bold text-slate-900 bg-bi-50/30'
-                                }`}
-                              >
-                                {row.hasilTerpilih}
-                              </td>
 
                               <td className="px-4 py-3 text-center text-slate-600 font-medium">
                                 {row.nilaiRujukan}

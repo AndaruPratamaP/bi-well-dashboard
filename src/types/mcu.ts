@@ -1,5 +1,5 @@
 export type Gender = 'L' | 'P';
-export type Department = 'BINS' | 'DTI' | 'DPD' | 'DSDM' | 'DKEB' | 'DKOM' | string;
+export type Department = 'BINS' | 'DEIH' | 'DPD' | 'DSDM' | 'DKEM' | 'DKOM' | string;
 export type ParamCategory = 'Fisik' | 'Hematologi' | 'Kimia Darah';
 export type ParamStatus = 'Normal' | 'High' | 'Low';
 export type RiskLevel = 'Sehat' | 'Risiko Ringan' | 'Risiko Tinggi';
