@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
   User,
@@ -54,6 +54,28 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
     'Kimia Darah': true
   });
   const [showHistoryColumns, setShowHistoryColumns] = useState<boolean>(true);
+  const [activeTooltip, setActiveTooltip] = useState<{
+    paramId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Automatically dismiss floating tooltip when scrolling or on Escape key
+  useEffect(() => {
+    const handleScroll = () => {
+      if (activeTooltip) setActiveTooltip(null);
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveTooltip(null);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTooltip]);
 
   // Current employee
   const currentEmployee = useMemo(() => {
@@ -619,38 +641,39 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
                                 <div className="flex items-center gap-1.5">
                                   <span>{row.namaParameter}</span>
                                   {paramInfo && (
-                                    <div className="relative inline-flex items-center group/tooltip">
-                                      <button
-                                        type="button"
-                                        tabIndex={0}
-                                        className="w-4 h-4 rounded-full bg-slate-100 hover:bg-bi-100 text-slate-400 hover:text-bi-700 flex items-center justify-center transition-colors cursor-help focus:outline-none"
-                                        aria-label={`Informasi medis ${row.namaParameter}`}
-                                      >
-                                        <Info className="w-2.5 h-2.5" />
-                                      </button>
-
-                                      {/* Floating Tooltip Popover on Hover */}
-                                      <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden group-hover/tooltip:block group-focus-within/tooltip:block z-50 w-72 p-3 bg-slate-900/95 text-white rounded-xl shadow-2xl backdrop-blur-sm border border-slate-700/80 pointer-events-none transition-all duration-150">
-                                        <div className="flex items-start justify-between gap-2 border-b border-slate-700 pb-1.5 mb-2">
-                                          <div>
-                                            <div className="text-xs font-bold text-bi-200">{paramInfo.fullName}</div>
-                                            <div className="text-[10px] text-slate-400">Kode: {row.idParam} | Satuan: {row.satuan}</div>
-                                          </div>
-                                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-bi-800/80 text-bi-200 whitespace-nowrap">
-                                            Info Medis
-                                          </span>
-                                        </div>
-                                        <p className="text-[11px] text-slate-200 leading-relaxed mb-2.5 font-normal whitespace-normal">
-                                          {paramInfo.explanation}
-                                        </p>
-                                        <div className="text-[10px] text-emerald-300 font-medium bg-emerald-950/70 p-2 rounded-lg border border-emerald-800/50 flex items-center gap-1.5 whitespace-normal">
-                                          <span className="font-bold">✓ Rujukan:</span>
-                                          <span>{paramInfo.normalInfo}</span>
-                                        </div>
-                                        {/* Tooltip Arrow */}
-                                        <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700"></div>
-                                      </div>
-                                    </div>
+                                    <button
+                                      type="button"
+                                      className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors cursor-pointer focus:outline-none ${
+                                        activeTooltip?.paramId === row.idParam
+                                          ? 'bg-bi-700 text-white ring-2 ring-bi-200'
+                                          : 'bg-slate-100 hover:bg-bi-100 text-slate-400 hover:text-bi-700'
+                                      }`}
+                                      onMouseEnter={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        setActiveTooltip({
+                                          paramId: row.idParam,
+                                          x: rect.right + 10,
+                                          y: rect.top + rect.height / 2
+                                        });
+                                      }}
+                                      onMouseLeave={() => setActiveTooltip(null)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        if (activeTooltip?.paramId === row.idParam) {
+                                          setActiveTooltip(null);
+                                        } else {
+                                          setActiveTooltip({
+                                            paramId: row.idParam,
+                                            x: rect.right + 10,
+                                            y: rect.top + rect.height / 2
+                                          });
+                                        }
+                                      }}
+                                      aria-label={`Informasi medis ${row.namaParameter}`}
+                                    >
+                                      <Info className="w-2.5 h-2.5" />
+                                    </button>
                                   )}
                                 </div>
                               </td>
@@ -722,6 +745,59 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
           })}
         </div>
       </div>
+
+      {/* Floating Medical Explanation Card (Positioned fixed so it is never clipped by overflow-hidden or tables) */}
+      {activeTooltip && PARAMETER_EXPLANATIONS[activeTooltip.paramId] && (() => {
+        const info = PARAMETER_EXPLANATIONS[activeTooltip.paramId];
+        const cardHeight = 220;
+        const cardWidth = 320;
+        
+        let top = activeTooltip.y - 70;
+        if (typeof window !== 'undefined') {
+          if (top + cardHeight > window.innerHeight - 16) {
+            top = window.innerHeight - cardHeight - 16;
+          }
+          if (top < 16) top = 16;
+        }
+
+        let left = activeTooltip.x;
+        if (typeof window !== 'undefined' && left + cardWidth > window.innerWidth - 16) {
+          left = activeTooltip.x - cardWidth - 24;
+        }
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              top: `${top}px`,
+              left: `${left}px`,
+              zIndex: 99999
+            }}
+            className="w-80 p-4 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 pointer-events-none transition-all duration-150"
+          >
+            <div className="flex items-start justify-between gap-2 border-b border-slate-700 pb-2 mb-2.5">
+              <div>
+                <div className="text-xs font-bold text-bi-200 leading-snug">{info.fullName}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">
+                  Kode: <span className="font-semibold text-slate-300">{activeTooltip.paramId}</span>
+                </div>
+              </div>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-bi-700 text-white whitespace-nowrap shadow-sm">
+                Info Medis
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-200 leading-relaxed mb-3 font-normal">
+              {info.explanation}
+            </p>
+
+            <div className="text-[10px] text-emerald-300 font-medium bg-emerald-950/80 p-2.5 rounded-xl border border-emerald-700/60 flex items-start gap-2">
+              <span className="text-emerald-400 font-bold shrink-0">✓ Rujukan:</span>
+              <span className="leading-snug">{info.normalInfo}</span>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
