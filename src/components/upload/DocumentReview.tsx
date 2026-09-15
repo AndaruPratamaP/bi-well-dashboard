@@ -75,9 +75,9 @@ export const DocumentReview: React.FC<DocumentReviewProps> = ({
     );
   };
 
-  // Counts of abnormal / out-of-range parameters
+  // Counts of abnormal / out-of-range parameters (ignore unexamined parameters where nilai === 0)
   const abnormalCount = useMemo(() => {
-    return params.filter(p => p.status !== 'Normal').length;
+    return params.filter(p => p.nilai > 0 && p.status !== 'Normal').length;
   }, [params]);
 
   const handleSave = () => {
@@ -278,7 +278,7 @@ export const DocumentReview: React.FC<DocumentReviewProps> = ({
                 2. Rincian 11 Parameter Hasil Laboratorium
               </h4>
               <span className="text-[11px] text-slate-500">
-                Nilai dapat disesuaikan langsung jika diperlukan
+                Nilai 0 = parameter tidak diuji / tidak tercantum di berkas
               </span>
             </div>
 
@@ -295,16 +295,22 @@ export const DocumentReview: React.FC<DocumentReviewProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {params.map(p => {
-                    const isAbnormal = p.status !== 'Normal';
+                    const isAbnormal = p.nilai > 0 && p.status !== 'Normal';
+                    const isNotTested = p.nilai === 0;
+
                     return (
                       <tr
                         key={p.idParam}
                         className={`transition-colors ${
-                          isAbnormal ? 'bg-amber-50/30' : 'hover:bg-slate-50'
+                          isAbnormal
+                            ? 'bg-amber-50/30'
+                            : isNotTested
+                            ? 'bg-slate-50/40 text-slate-400'
+                            : 'hover:bg-slate-50'
                         }`}
                       >
                         <td className="px-3 py-2 font-medium text-slate-800">
-                          <span>{p.nama}</span>
+                          <span className={isNotTested ? 'text-slate-500' : ''}>{p.nama}</span>
                           <span className="block text-[10px] text-slate-400 font-mono">[{p.idParam}]</span>
                         </td>
                         <td className="px-3 py-2 text-center">
@@ -316,6 +322,8 @@ export const DocumentReview: React.FC<DocumentReviewProps> = ({
                             className={`w-20 text-center text-xs font-bold px-2 py-1 rounded-lg border ${
                               isAbnormal
                                 ? 'border-amber-400 bg-amber-50 text-amber-900 focus:ring-amber-500'
+                                : isNotTested
+                                ? 'border-dashed border-slate-300 bg-slate-100/70 text-slate-500 focus:ring-bi-900 focus:bg-white focus:text-slate-900'
                                 : 'border-slate-300 bg-white text-slate-800 focus:ring-bi-900'
                             } focus:outline-none focus:ring-2`}
                           />
@@ -329,14 +337,16 @@ export const DocumentReview: React.FC<DocumentReviewProps> = ({
                         <td className="px-3 py-2 text-center">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                              p.status === 'Normal'
+                              isNotTested
+                                ? 'bg-slate-100 text-slate-500 border border-slate-200'
+                                : p.status === 'Normal'
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                                 : p.status === 'High'
                                 ? 'bg-amber-100 text-amber-800 border border-amber-300'
                                 : 'bg-blue-100 text-blue-800 border border-blue-200'
                             }`}
                           >
-                            {p.status}
+                            {isNotTested ? 'Tidak Diuji (0)' : p.status}
                           </span>
                         </td>
                       </tr>

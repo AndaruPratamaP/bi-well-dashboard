@@ -53,6 +53,7 @@ export const STANDARD_PARAMS = [
 ];
 
 export function computeParamStatus(nilai: number, min: number, max: number): ParamStatus {
+  if (nilai <= 0) return 'Normal'; // Nilai 0 = parameter tidak diuji / tidak tercantum, tidak dianggap abnormal
   if (nilai < min) return 'Low';
   if (nilai > max) return 'High';
   return 'Normal';
@@ -203,9 +204,16 @@ MAKA KAMU WAJIB MENOLAKNYA DAN HANYA MENGEMBALIKAN OUTPUT JSON PERSIS SEPERTI IN
 }
 
 JIKA DOKUMEN INI VALID SEBAGAI HASIL LAB / MCU MEDIS:
-Ekstrak parameter yang BENAR-BENAR TERCANTUM pada dokumen. JANGAN PERNAH MENGARANG PARAMETER ATAU NILAI YANG TIDAK ADA!
+Ekstrak parameter yang BENAR-BENAR TERCANTUM pada dokumen MCU tersebut.
 
-11 Parameter yang dicari:
+ATURAN SANGAT KETAT UNTUK NILAI PARAMETER (PENTING):
+1. JANGAN PERNAH MENGARANG, MENEBAK, ATAU MENGISI NILAI YANG TIDAK TERCANTUM PADA DOKUMEN!
+2. Jika dokumen laboratorium hanya memuat sebagian parameter (misalnya hanya ada 7, 8, atau 9 parameter dari 11 parameter di bawah):
+   - HANYA masukkan parameter yang BENAR-BENAR ADA di dokumen ke dalam array "parameters".
+   - Parameter yang TIDAK TERTULIS atau TIDAK DIUJI di dokumen JANGAN dimasukkan ke dalam array "parameters", atau jika kamu sertakan, beri nilai: 0.
+   - JANGAN PERNAH mengisi nilai rata-rata, nilai normal acak, atau perkiraan untuk parameter yang tidak ada!
+
+11 Parameter standar:
 - P01: BMI (Body Mass Index)
 - P02: Sistolik (Tekanan darah atas, mmHg)
 - P03: Diastolik (Tekanan darah bawah, mmHg)
@@ -368,8 +376,17 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK:
         (p: any) => p.idParam === std.idParam || p.nama?.toLowerCase().includes(std.nama.toLowerCase())
       );
 
-      const val = found && typeof found.nilai === 'number' ? found.nilai : (std.min + std.max) / 2;
-      const status = computeParamStatus(val, std.min, std.max);
+      let parsedVal: number | null = null;
+      if (found && found.nilai !== null && found.nilai !== undefined) {
+        const num = typeof found.nilai === 'number' ? found.nilai : parseFloat(String(found.nilai).replace(',', '.'));
+        if (!isNaN(num) && num > 0) {
+          parsedVal = num;
+        }
+      }
+
+      // Jika parameter tidak ada / tidak diuji di dokumen MCU, nilai default WAJIB 0
+      const val = parsedVal !== null ? parsedVal : 0;
+      const status = val === 0 ? 'Normal' : computeParamStatus(val, std.min, std.max);
 
       return {
         idParam: std.idParam,

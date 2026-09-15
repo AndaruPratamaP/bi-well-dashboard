@@ -188,7 +188,7 @@ export function getEmployeesStatusForYear(
     }
 
     const details = getRecordDetails(record.ID_MCU);
-    const abnormalDetails = details.filter(d => d.Status !== 'Normal');
+    const abnormalDetails = details.filter(d => d.Status !== 'Normal' && d.Nilai_Hasil > 0);
 
     const abnormalParams = abnormalDetails.map(d => {
       const p = paramMap.get(d.ID_Param)!;
@@ -466,13 +466,13 @@ export function getEmployeeQuickVitals(nip: string, targetYear: number = 2026): 
   const vitals: QuickVital[] = [];
 
   // BMI
-  if (bmiCurr) {
-    const delta = bmiPrev ? parseFloat((bmiCurr.Nilai_Hasil - bmiPrev.Nilai_Hasil).toFixed(2)) : undefined;
+  if (bmiCurr && bmiCurr.Nilai_Hasil > 0) {
+    const delta = bmiPrev && bmiPrev.Nilai_Hasil > 0 ? parseFloat((bmiCurr.Nilai_Hasil - bmiPrev.Nilai_Hasil).toFixed(2)) : undefined;
     vitals.push({
       label: 'Indeks Massa Tubuh (BMI)',
       paramId: 'P01',
       currentValue: bmiCurr.Nilai_Hasil,
-      previousValue: bmiPrev?.Nilai_Hasil,
+      previousValue: bmiPrev && bmiPrev.Nilai_Hasil > 0 ? bmiPrev.Nilai_Hasil : undefined,
       delta,
       unit: bmiP.Satuan,
       status: bmiCurr.Status,
@@ -483,8 +483,8 @@ export function getEmployeeQuickVitals(nip: string, targetYear: number = 2026): 
   }
 
   // Blood Pressure (composite card)
-  if (sisCurr && diaCurr) {
-    const sisDelta = sisPrev ? parseFloat((sisCurr.Nilai_Hasil - sisPrev.Nilai_Hasil).toFixed(1)) : 0;
+  if (sisCurr && diaCurr && sisCurr.Nilai_Hasil > 0 && diaCurr.Nilai_Hasil > 0) {
+    const sisDelta = sisPrev && sisPrev.Nilai_Hasil > 0 ? parseFloat((sisCurr.Nilai_Hasil - sisPrev.Nilai_Hasil).toFixed(1)) : 0;
     const bpStatus = (sisCurr.Status === 'High' || diaCurr.Status === 'High') ? 'High' : 
                      (sisCurr.Status === 'Low' || diaCurr.Status === 'Low') ? 'Low' : 'Normal';
     vitals.push({
@@ -492,7 +492,7 @@ export function getEmployeeQuickVitals(nip: string, targetYear: number = 2026): 
       paramId: 'P02_P03',
       currentValue: sisCurr.Nilai_Hasil,
       formattedDisplay: `${sisCurr.Nilai_Hasil.toFixed(0)} / ${diaCurr.Nilai_Hasil.toFixed(0)}`,
-      previousValue: sisPrev?.Nilai_Hasil,
+      previousValue: sisPrev && sisPrev.Nilai_Hasil > 0 ? sisPrev.Nilai_Hasil : undefined,
       delta: sisDelta,
       unit: 'mmHg',
       status: bpStatus,
@@ -503,13 +503,13 @@ export function getEmployeeQuickVitals(nip: string, targetYear: number = 2026): 
   }
 
   // Fasting Blood Glucose
-  if (gdpCurr) {
-    const delta = gdpPrev ? parseFloat((gdpCurr.Nilai_Hasil - gdpPrev.Nilai_Hasil).toFixed(1)) : undefined;
+  if (gdpCurr && gdpCurr.Nilai_Hasil > 0) {
+    const delta = gdpPrev && gdpPrev.Nilai_Hasil > 0 ? parseFloat((gdpCurr.Nilai_Hasil - gdpPrev.Nilai_Hasil).toFixed(1)) : undefined;
     vitals.push({
       label: 'Gula Darah Puasa (GDP)',
       paramId: 'K02',
       currentValue: gdpCurr.Nilai_Hasil,
-      previousValue: gdpPrev?.Nilai_Hasil,
+      previousValue: gdpPrev && gdpPrev.Nilai_Hasil > 0 ? gdpPrev.Nilai_Hasil : undefined,
       delta,
       unit: gdpP.Satuan,
       status: gdpCurr.Status,
@@ -520,13 +520,13 @@ export function getEmployeeQuickVitals(nip: string, targetYear: number = 2026): 
   }
 
   // Total Cholesterol
-  if (kolCurr) {
-    const delta = kolPrev ? parseFloat((kolCurr.Nilai_Hasil - kolPrev.Nilai_Hasil).toFixed(1)) : undefined;
+  if (kolCurr && kolCurr.Nilai_Hasil > 0) {
+    const delta = kolPrev && kolPrev.Nilai_Hasil > 0 ? parseFloat((kolCurr.Nilai_Hasil - kolPrev.Nilai_Hasil).toFixed(1)) : undefined;
     vitals.push({
       label: 'Kolesterol Total',
       paramId: 'K01',
       currentValue: kolCurr.Nilai_Hasil,
-      previousValue: kolPrev?.Nilai_Hasil,
+      previousValue: kolPrev && kolPrev.Nilai_Hasil > 0 ? kolPrev.Nilai_Hasil : undefined,
       delta,
       unit: kolP.Satuan,
       status: kolCurr.Status,
