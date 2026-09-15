@@ -134,126 +134,138 @@ export async function sendChatMessageToGemini(
 
   const systemInstruction = buildChatSystemInstruction(year, currentUser, selectedNip);
 
-  // Gemini API mewajibkan percakapan multi-turn selalu dimulai oleh pesan role 'user'
-  // Singkirkan pesan greeting sistem yang ber-role 'model'
+  // Pastikan percakapan multi-turn selalu bergantian secara ketat (user -> model -> user -> model)
   const chatTurns = messages.filter(m => m.id !== 'msg-welcome' && m.text.trim().length > 0);
   const firstUserIdx = chatTurns.findIndex(m => m.sender === 'user');
   const validTurns = firstUserIdx !== -1 ? chatTurns.slice(firstUserIdx) : [];
 
-  const turnsToSend = validTurns.length > 0 ? validTurns.slice(-10) : [
+  const rawTurnsToSend = validTurns.length > 0 ? validTurns.slice(-10) : [
     { sender: 'user', text: messages[messages.length - 1]?.text || 'Halo' }
   ];
 
-  const contents = turnsToSend.map(msg => ({
-    role: msg.sender === 'user' ? 'user' : 'model',
-    parts: [{ text: msg.text }]
-  }));
-
-  const payload = {
-    contents,
-    systemInstruction: {
-      parts: [{ text: systemInstruction }]
-    },
-    generationConfig: {
-      temperature: 0.4,
-      maxOutputTokens: 1200,
-      topP: 0.95
+  // Normalisasi alternating roles
+  const normalizedTurns: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
+  for (const turn of rawTurnsToSend) {
+    const role: 'user' | 'model' = turn.sender === 'user' ? 'user' : 'model';
+    if (normalizedTurns.length === 0) {
+      if (role === 'user') {
+        normalizedTurns.push({ role: 'user', parts: [{ text: turn.text }] });
+      }
+    } else {
+      const prev = normalizedTurns[normalizedTurns.length - 1];
+      if (prev.role === role) {
+        prev.parts[0].text += `\n\n${turn.text}`;
+      } else {
+        normalizedTurns.push({ role, parts: [{ text: turn.text }] });
+      }
     }
-  };
+  }
 
-  // Dapatkan daftar model yang benar-benar didukung oleh akun pengguna secara dinamis
+  if (normalizedTurns.length === 0) {
+    normalizedTurns.push({
+      role: 'user',
+      parts: [{ text: messages[messages.length - 1]?.text || 'Halo' }]
+    });
+  }
+
+  // Dapatkan model aktif dari akun pengguna
   const candidateModels = await getAvailableGeminiModels(apiKey);
-
-  let lastError: any = null;
+  const debugAttempts: string[] = [];
 
   for (const model of candidateModels) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    // Percobaan 1: Payload standar dengan system_instruction
+    const payloadStandard = {
+      contents: normalizedTurns,
+      system_instruction: {
+        parts: [{ text: systemInstruction }]
+      },
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: 1200,
+        topP: 0.95
+      }
+    };
+
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-      // 1. Coba payload standar dengan system_instruction (format snake_case sesuai REST spec Google)
-      const payload = {
-        contents,
-        system_instruction: {
-          parts: [{ text: systemInstruction }]
-        },
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 1200,
-          topP: 0.95
-        }
-      };
-
       let response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-goog-api-key': apiKey
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payloadStandard)
       });
 
-      // 2. Jika status 400 (beberapa model/endpoint tidak mendukung system_instruction terpisah), coba payload tanpa system_instruction
+      // Percobaan 2: Jika status 400, coba suntikkan panduan langsung ke turn pertama tanpa system_instruction
       if (response.status === 400) {
-        const altPayload = {
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: `[PANDUAN SISTEM BI-WELL]:\n${systemInstruction}\n\n[PERTANYAAN PENGGUNA]:\n${turnsToSend[0].text}`
-                }
-              ]
-            },
-            ...turnsToSend.slice(1).map(msg => ({
-              role: msg.sender === 'user' ? 'user' : 'model',
-              parts: [{ text: msg.text }]
-            }))
-          ],
+        const altTurns = [
+          {
+            role: 'user' as const,
+            parts: [
+              {
+                text: `[PANDUAN SISTEM BI-WELL AI COPILOT]:\n${systemInstruction}\n\n[PERTANYAAN PENGGUNA]:\n${normalizedTurns[0].parts[0].text}`
+              }
+            ]
+          },
+          ...normalizedTurns.slice(1)
+        ];
+
+        const payloadAlt = {
+          contents: altTurns,
           generationConfig: {
             temperature: 0.4,
             maxOutputTokens: 1200
           }
         };
 
-        response = await fetch(endpoint, {
+        const altResponse = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-goog-api-key': apiKey
           },
-          body: JSON.stringify(altPayload)
+          body: JSON.stringify(payloadAlt)
         });
+
+        if (altResponse.ok) {
+          response = altResponse;
+        } else {
+          const errTxt = await altResponse.text();
+          debugAttempts.push(`Model '${model}' (Alt Payload) -> HTTP ${altResponse.status}: ${errTxt}`);
+        }
       }
 
       if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        const errMsg = errJson.error?.message || `HTTP ${response.status}`;
-        lastError = new Error(errMsg);
-        // Jika model 404 atau tidak didukung di endpoint ini, coba model berikutnya
-        if (response.status === 404 || errMsg.includes('not found') || errMsg.includes('not supported')) {
-          continue;
-        }
-        throw new Error(errMsg);
+        const errTxt = await response.text();
+        debugAttempts.push(`Model '${model}' -> HTTP ${response.status}: ${errTxt}`);
+        continue;
       }
 
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!text) {
-        throw new Error('Tidak ada respons teks yang dihasilkan dari AI.');
+        debugAttempts.push(`Model '${model}' -> Berhasil terhubung tapi respons teks kosong (candidates: ${JSON.stringify(data.candidates)})`);
+        continue;
       }
 
       return text;
-    } catch (err: any) {
-      lastError = err;
-      if (err.message && (err.message.includes('404') || err.message.includes('not found') || err.message.includes('not supported'))) {
-        continue;
-      }
-      throw err;
+    } catch (fetchErr: any) {
+      debugAttempts.push(`Model '${model}' -> Network/Fetch Error: ${fetchErr.message || fetchErr}`);
     }
   }
 
-  throw lastError || new Error('Gagal menghubungi layanan Google Gemini.');
+  // Jika semua model gagal, lemparkan error diagnostik lengkap
+  const keyPreview = `${apiKey.slice(0, 6)}...${apiKey.slice(-4)} (Panjang: ${apiKey.length} char)`;
+  throw new Error(
+    `[LAPORAN DEBUG KONEKSI AI]\n` +
+    `API Key: ${keyPreview}\n` +
+    `Model Terdaftar: ${candidateModels.join(', ')}\n\n` +
+    `Rincian Percobaan:\n` +
+    debugAttempts.map((d, i) => `${i + 1}. ${d}`).join('\n\n')
+  );
 }
 
 /**
