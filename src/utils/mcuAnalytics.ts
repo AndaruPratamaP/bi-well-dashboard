@@ -15,15 +15,34 @@ import {
   QuickVital
 } from '../types/mcu';
 
-export const data: MCUFullData = mcuRawData as MCUFullData;
+export let data: MCUFullData = mcuRawData as MCUFullData;
 
 // Map for quick parameter lookup
-export const paramMap = new Map<string, ParameterReferensi>();
+export let paramMap = new Map<string, ParameterReferensi>();
 data.parameters.forEach(p => paramMap.set(p.ID_Param, p));
 
 // Map for employee lookup
-export const employeeMap = new Map<string, Pegawai>();
+export let employeeMap = new Map<string, Pegawai>();
 data.pegawai.forEach(e => employeeMap.set(e.NIP, e));
+
+// Get all unique departments
+export let departmentList = Array.from(new Set(data.pegawai.map(e => e.Departemen))).sort();
+
+// Get all unique MCU years
+export let availableYears = Array.from(new Set(data.mcu_records.map(r => r.Tahun))).sort((a, b) => b - a);
+
+/**
+ * Update the active in-memory MCU data store (synchronized with MCUDataContext)
+ */
+export function setMCUData(newData: MCUFullData) {
+  data = newData;
+  paramMap = new Map<string, ParameterReferensi>();
+  newData.parameters.forEach(p => paramMap.set(p.ID_Param, p));
+  employeeMap = new Map<string, Pegawai>();
+  newData.pegawai.forEach(e => employeeMap.set(e.NIP, e));
+  departmentList = Array.from(new Set(newData.pegawai.map(e => e.Departemen))).sort();
+  availableYears = Array.from(new Set(newData.mcu_records.map(r => r.Tahun))).sort((a, b) => b - a);
+}
 
 // Calculate age from birthdate
 export function calculateAge(birthDateStr: string, asOfYear: number = 2026): number {
@@ -31,11 +50,6 @@ export function calculateAge(birthDateStr: string, asOfYear: number = 2026): num
   return asOfYear - birthYear;
 }
 
-// Get all unique departments
-export const departmentList = Array.from(new Set(data.pegawai.map(e => e.Departemen))).sort();
-
-// Get all unique MCU years
-export const availableYears = Array.from(new Set(data.mcu_records.map(r => r.Tahun))).sort((a, b) => b - a);
 
 /**
  * Get full MCU details for a specific record

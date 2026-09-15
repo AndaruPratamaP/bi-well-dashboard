@@ -5,10 +5,11 @@ import { IndividualDashboard } from './components/individual/IndividualDashboard
 import { LoginPortal } from './components/auth/LoginPortal';
 import { AuthUser } from './types/auth';
 import { ShieldCheck, HeartPulse } from 'lucide-react';
+import { MCUDataProvider } from './context/MCUDataContext';
 
 const STORAGE_KEY = 'bi_well_user_session';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -115,6 +116,14 @@ export const App: React.FC = () => {
         </div>
       </footer>
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <MCUDataProvider>
+      <AppContent />
+    </MCUDataProvider>
   );
 };
 

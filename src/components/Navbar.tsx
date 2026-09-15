@@ -1,6 +1,14 @@
 import React from 'react';
-import { Activity, Users, User, ShieldCheck, HeartPulse, LogOut } from 'lucide-react';
+import {
+  HeartPulse,
+  Users,
+  User,
+  LogOut,
+  Database,
+  RefreshCw
+} from 'lucide-react';
 import { AuthUser } from '../types/auth';
+import { useMCUData } from '../context/MCUDataContext';
 
 interface NavbarProps {
   activeTab: 'admin' | 'individual';
@@ -19,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const isAdmin = currentUser?.role === 'admin';
   const isEmployee = currentUser?.role === 'employee';
+  const { isSyncing, cloudConnected } = useMCUData();
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
@@ -72,8 +81,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
 
-          {/* User Profile & Logout */}
+          {/* User Profile & Cloud Status */}
           <div className="flex items-center gap-3">
+            {/* Cloud Sync Status Indicator */}
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 border border-slate-200 text-slate-600">
+              {isSyncing ? (
+                <>
+                  <RefreshCw className="w-3 h-3 text-bi-900 animate-spin" />
+                  <span>Sinkronisasi...</span>
+                </>
+              ) : cloudConnected ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <Database className="w-3 h-3 text-emerald-600" />
+                  <span>Cloud Active</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-slate-400" />
+                  <span>Local Data</span>
+                </>
+              )}
+            </div>
             {currentUser && (
               <div className="flex items-center gap-2.5 pl-2">
                 <div className="w-8 h-8 rounded-lg bg-bi-50 border border-bi-200 text-bi-900 flex items-center justify-center font-bold text-xs">

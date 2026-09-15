@@ -10,7 +10,8 @@ import {
   ArrowUpRight,
   ShieldCheck,
   ChevronRight,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 import {
   availableYears,
@@ -24,6 +25,8 @@ import {
   paramMap
 } from '../../utils/mcuAnalytics';
 import { EmployeeMCUStatus } from '../../types/mcu';
+import { useMCUData } from '../../context/MCUDataContext';
+import { MCUUploadModal } from '../upload/MCUUploadModal';
 
 interface AdminDashboardProps {
   selectedYear: number;
@@ -36,14 +39,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onYearChange,
   onSelectEmployee
 }) => {
+  const { dataRevision, departments: activeDepartments, years: activeYears, totalEmployeesCount } = useMCUData();
   const [selectedDept, setSelectedDept] = useState<string>('Semua');
   const [selectedTrendParam, setSelectedTrendParam] = useState<string>('P01'); // Default BMI
   const [showConfidentialList, setShowConfidentialList] = useState<boolean>(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
 
   // 1. Filtered employee status list for selected year and dept
   const employeeStatuses: EmployeeMCUStatus[] = useMemo(() => {
     return getEmployeesStatusForYear(selectedYear, selectedDept);
-  }, [selectedYear, selectedDept]);
+  }, [selectedYear, selectedDept, dataRevision]);
 
   // Total Employees
   const totalEmployees = employeeStatuses.length;
@@ -64,7 +69,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // When selectedDept !== 'Semua', returns only that single department centered in chart
   const deptRiskStats = useMemo(() => {
     return getDepartmentRiskDemographics(selectedYear, selectedDept);
-  }, [selectedYear, selectedDept]);
+  }, [selectedYear, selectedDept, dataRevision]);
 
   const deptStackedBarOption = useMemo(() => {
     const depts = deptRiskStats.map(d => d.departemen);
@@ -182,7 +187,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Kategori Stacked: Kelas A, Kelas B, Kelas C, Kelas D
   const ageGroupClassStats = useMemo(() => {
     return getAgeGroupClassDemographics(selectedYear, selectedDept);
-  }, [selectedYear, selectedDept]);
+  }, [selectedYear, selectedDept, dataRevision]);
 
   const ageStackedBarOption = useMemo(() => {
     const ageLabels = ageGroupClassStats.map(a => a.ageGroup);
@@ -295,7 +300,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // 4. Top 5 Parameter Abnormalities (Horizontal Bar Chart)
   const top5Abnormal = useMemo(() => {
     return getTop5AbnormalParameters(selectedYear, selectedDept);
-  }, [selectedYear, selectedDept]);
+  }, [selectedYear, selectedDept, dataRevision]);
 
   const horizontalBarOption = useMemo(() => {
     // Reverse for horizontal chart display from top to bottom
@@ -373,7 +378,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // 5. Yearly Trend Chart (Multi-Line Chart for chosen parameter)
   const annualTrends = useMemo(() => {
     return getAnnualParameterAverages(selectedTrendParam, selectedDept);
-  }, [selectedTrendParam, selectedDept]);
+  }, [selectedTrendParam, selectedDept, dataRevision]);
 
   const trendLineOption = useMemo(() => {
     const years = annualTrends.trends.map(t => t.year.toString());
@@ -485,7 +490,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onChange={e => onYearChange(Number(e.target.value))}
               className="text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-bi-900"
             >
-              {availableYears.map(yr => (
+              {activeYears.map(yr => (
                 <option key={yr} value={yr}>
                   MCU {yr}
                 </option>
@@ -502,14 +507,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onChange={e => setSelectedDept(e.target.value)}
               className="text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-bi-900"
             >
-              <option value="Semua">Semua Departemen ({data.pegawai.length})</option>
-              {departmentList.map(dept => (
+              <option value="Semua">Semua Departemen ({totalEmployeesCount})</option>
+              {activeDepartments.map(dept => (
                 <option key={dept} value={dept}>
                   {dept}
                 </option>
               ))}
             </select>
           </div>
+
+          {/* AI MCU Upload Button */}
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-white bg-bi-900 hover:bg-bi-800 rounded-lg shadow-sm transition-all hover:shadow hover:scale-[1.02]"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Unggah Dokumen MCU (AI Scan)</span>
+          </button>
         </div>
       </div>
 
@@ -832,6 +846,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* AI MCU Upload Modal */}
+      <MCUUploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        onSelectEmployee={onSelectEmployee}
+      />
 
     </div>
   );

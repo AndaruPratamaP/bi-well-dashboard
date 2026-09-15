@@ -26,6 +26,7 @@ import {
   PARAMETER_EXPLANATIONS
 } from '../../utils/mcuAnalytics';
 import { ParamCategory } from '../../types/mcu';
+import { useMCUData } from '../../context/MCUDataContext';
 
 interface IndividualDashboardProps {
   selectedNip: string;
@@ -42,6 +43,8 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
   onYearChange,
   isEmployeeRole = false
 }) => {
+  const { fullData, dataRevision } = useMCUData();
+
   // Selected parameter for time-series chart (default: K05 SGPT (ALT) as mentioned in SDD example)
   const [selectedParamId, setSelectedParamId] = useState<string>('K05');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -76,41 +79,41 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
 
   // Current employee
   const currentEmployee = useMemo(() => {
-    return employeeMap.get(selectedNip) || data.pegawai[0];
-  }, [selectedNip]);
+    return employeeMap.get(selectedNip) || fullData.pegawai[0] || data.pegawai[0];
+  }, [selectedNip, dataRevision, fullData.pegawai]);
 
   // All employees for dropdown/search
   const filteredEmployees = useMemo(() => {
-    if (!searchTerm.trim()) return data.pegawai;
+    if (!searchTerm.trim()) return fullData.pegawai;
     const term = searchTerm.toLowerCase();
-    return data.pegawai.filter(
+    return fullData.pegawai.filter(
       e =>
         e.Nama.toLowerCase().includes(term) ||
         e.NIP.includes(term) ||
         e.Departemen.toLowerCase().includes(term)
     );
-  }, [searchTerm]);
+  }, [searchTerm, fullData.pegawai]);
 
   // Status for selected year
   const employeeStatus = useMemo(() => {
     const statuses = getEmployeesStatusForYear(selectedYear);
     return statuses.find(s => s.nip === currentEmployee.NIP);
-  }, [currentEmployee, selectedYear]);
+  }, [currentEmployee, selectedYear, dataRevision]);
 
   // Quick Vitals
   const quickVitals = useMemo(() => {
     return getEmployeeQuickVitals(currentEmployee.NIP, selectedYear);
-  }, [currentEmployee, selectedYear]);
+  }, [currentEmployee, selectedYear, dataRevision]);
 
   // Time Series Chart Data
   const timeSeriesData = useMemo(() => {
     return getEmployeeTimeSeries(currentEmployee.NIP, selectedParamId);
-  }, [currentEmployee, selectedParamId]);
+  }, [currentEmployee, selectedParamId, dataRevision]);
 
   // Collapsible Lab Tables
   const labTableCategories = useMemo(() => {
     return getEmployeeLabTable(currentEmployee.NIP, selectedYear);
-  }, [currentEmployee, selectedYear]);
+  }, [currentEmployee, selectedYear, dataRevision]);
 
   // Toggle category collapse
   const toggleCategory = (cat: string) => {
