@@ -36,13 +36,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           
           {/* Logo & Platform Name */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-bi-900 flex items-center justify-center text-white shadow-md shadow-bi-900/20">
-              <HeartPulse className="w-6 h-6 text-emerald-400" />
+            <div className="w-11 h-11 flex items-center justify-center shrink-0">
+              <img
+                src="/logo-bi-well-emblem.png"
+                alt="BI-WELL Logo"
+                className="w-full h-full object-contain drop-shadow-sm"
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-black tracking-tight text-bi-950">BI-WELL</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-bi-50 text-bi-800 border border-bi-200">
+                <span className="text-lg font-black tracking-tight text-bi-950 font-sans">
+                  BI-WELL
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-bi-50 text-bi-900 border border-bi-200">
                   MCU Analytics
                 </span>
               </div>

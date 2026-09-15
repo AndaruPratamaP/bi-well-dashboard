@@ -70,12 +70,19 @@ export const LoginPortal: React.FC<LoginPortalProps> = ({ onLogin }) => {
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         
         {/* Header */}
-        <div className="bg-bi-900 p-6 text-white text-center">
-          <div className="w-12 h-12 mx-auto rounded-xl bg-white/10 flex items-center justify-center mb-2">
-            <HeartPulse className="w-6 h-6 text-emerald-400" />
+        <div className="bg-gradient-to-br from-bi-950 via-bi-900 to-bi-800 p-6 text-white text-center">
+          <div className="w-16 h-16 mx-auto mb-2 flex items-center justify-center">
+            <img
+              src="/logo-bi-well-emblem.png"
+              alt="BI-WELL Logo"
+              className="w-full h-full object-contain drop-shadow-md"
+            />
           </div>
-          <h1 className="text-xl font-bold tracking-tight">BI-WELL</h1>
-          <p className="text-xs text-bi-200 mt-0.5">
+          <h1 className="text-2xl font-black tracking-tight">BI-WELL</h1>
+          <p className="text-[10px] font-semibold text-emerald-300 tracking-wider uppercase mt-0.5">
+            People • Wellness • A Brighter Tomorrow
+          </p>
+          <p className="text-xs text-bi-100/90 mt-1">
             Platform Kesehatan Pegawai Bank Indonesia
           </p>
         </div>

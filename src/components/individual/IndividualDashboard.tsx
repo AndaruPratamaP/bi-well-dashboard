@@ -152,7 +152,7 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
         value: item.nilai,
         name: item.tanggal,
         itemStyle: {
-          color: isNormal ? '#003876' : '#ef4444', // Blue if normal, bright red if abnormal
+          color: isNormal ? '#004E5B' : '#ef4444', // Dark Teal if normal, bright red if abnormal (severity preserved)
           borderColor: '#ffffff',
           borderWidth: 2
         },
@@ -216,7 +216,7 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
           symbolSize: 10,
           lineStyle: {
             width: 3,
-            color: '#387ecf'
+            color: '#0E8B96' // BI-WELL Teal
           },
           // SDD Critical Rule: "Harus ada Shaded Area / Band berwarna Hijau transparan di background grafik sebagai penanda Rentang Normal"
           markArea: {

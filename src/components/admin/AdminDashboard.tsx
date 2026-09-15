@@ -364,8 +364,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               x2: 1,
               y2: 0,
               colorStops: [
-                { offset: 0, color: '#003876' },
-                { offset: 1, color: '#2563eb' }
+                { offset: 0, color: '#004E5B' },
+                { offset: 1, color: '#0E8B96' }
               ]
             },
             borderRadius: [0, 6, 6, 0]
@@ -427,10 +427,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           symbolSize: 8,
           lineStyle: {
             width: 3.5,
-            color: '#003876'
+            color: '#004E5B'
           },
           itemStyle: {
-            color: '#003876',
+            color: '#0E8B96',
             borderWidth: 2,
             borderColor: '#ffffff'
           },

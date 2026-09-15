@@ -95,8 +95,8 @@ export const ApiKeyConfigModal: React.FC<ApiKeyConfigModalProps> = ({
         {/* Header */}
         <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-bi-50 flex items-center justify-center text-bi-900">
-              <Key className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-lg bg-bi-50 flex items-center justify-center p-1 border border-bi-200 shadow-2xs">
+              <img src="/logo-bi-well-emblem.png" alt="BI-WELL" className="w-full h-full object-contain" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-900">Konfigurasi Cloud & AI (Opsional)</h2>
@@ -114,8 +114,8 @@ export const ApiKeyConfigModal: React.FC<ApiKeyConfigModalProps> = ({
         {/* Content */}
         <div className="p-6 space-y-6 overflow-y-auto">
           {/* Info Banner */}
-          <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start gap-2.5">
-            <ShieldCheck className="w-4 h-4 text-bi-900 mt-0.5 shrink-0" />
+          <div className="p-3.5 bg-bi-50/80 border border-bi-200 rounded-xl text-xs text-bi-950 flex items-start gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-bi-700 mt-0.5 shrink-0" />
             <div>
               <span className="font-bold block">100% Gratis & Bebas Overbilling</span>
               <span>

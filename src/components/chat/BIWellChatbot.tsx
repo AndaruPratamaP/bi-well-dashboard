@@ -284,8 +284,8 @@ ${err.message || String(err)}
             aria-label="Buka Chatbot BI-WELL AI"
           >
             <div className="relative">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-full bg-white/20 p-1 flex items-center justify-center">
+                <img src="/logo-bi-well-emblem.png" alt="BI-WELL" className="w-full h-full object-contain" />
               </div>
               <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -319,8 +319,8 @@ ${err.message || String(err)}
           <div className="bg-gradient-to-r from-bi-950 via-bi-900 to-bi-800 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-md">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="relative">
-                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-                  <Bot className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-xl bg-white/15 p-1 flex items-center justify-center border border-white/25">
+                  <img src="/logo-bi-well-emblem.png" alt="BI-WELL" className="w-full h-full object-contain" />
                 </div>
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-bi-900" />
               </div>
@@ -409,8 +409,8 @@ ${err.message || String(err)}
                       className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in group`}
                     >
                       {!isUser && (
-                        <div className="w-6 h-6 rounded-full bg-bi-900 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                          <Bot className="w-3.5 h-3.5" />
+                        <div className="w-6 h-6 rounded-full bg-bi-50 border border-bi-200 p-0.5 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                          <img src="/logo-bi-well-emblem.png" alt="AI" className="w-full h-full object-contain" />
                         </div>
                       )}
 

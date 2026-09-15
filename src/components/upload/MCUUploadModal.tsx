@@ -195,8 +195,8 @@ export const MCUUploadModal: React.FC<MCUUploadModalProps> = ({
           {/* Header */}
           <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-bi-50 flex items-center justify-center text-bi-900">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-bi-50 flex items-center justify-center p-1.5 border border-bi-200 shadow-2xs">
+                <img src="/logo-bi-well-emblem.png" alt="BI-WELL" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
