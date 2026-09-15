@@ -2,6 +2,7 @@ export type Gender = 'L' | 'P';
 export type Department = 'BINS' | 'DEIH' | 'DPD' | 'DSDM' | 'DKEM' | 'DKOM' | string;
 export type ParamCategory = 'Fisik' | 'Hematologi' | 'Kimia Darah';
 export type ParamStatus = 'Normal' | 'High' | 'Low';
+export type HealthClass = 'Kelas A' | 'Kelas B' | 'Kelas C' | 'Kelas D';
 export type RiskLevel = 'Sehat' | 'Risiko Ringan' | 'Risiko Tinggi';
 export type WorkFitnessStatus = 'Fit to Work' | 'Fit to Work with Note' | 'Unfit';
 
@@ -54,6 +55,7 @@ export interface EmployeeMCUStatus {
   tanggalMcu: string;
   idMcu: string;
   abnormalCount: number;
+  healthClass: HealthClass;
   riskLevel: RiskLevel;
   workFitnessStatus: WorkFitnessStatus;
   abnormalParams: {
@@ -68,12 +70,33 @@ export interface EmployeeMCUStatus {
 export interface DepartmentRiskStats {
   departemen: string;
   totalPegawai: number;
+  kelasACount: number;
+  kelasAPct: number;
+  kelasBCount: number;
+  kelasBPct: number;
+  kelasCCount: number;
+  kelasCPct: number;
+  kelasDCount: number;
+  kelasDPct: number;
   sehatCount: number;
   sehatPct: number;
   ringanCount: number;
   ringanPct: number;
   tinggiCount: number;
   tinggiPct: number;
+}
+
+export interface AgeGroupClassStats {
+  ageGroup: '< 30' | '30 < X < 40' | '40 < X < 50' | '50 <';
+  total: number;
+  kelasACount: number;
+  kelasAPct: number;
+  kelasBCount: number;
+  kelasBPct: number;
+  kelasCCount: number;
+  kelasCPct: number;
+  kelasDCount: number;
+  kelasDPct: number;
 }
 
 export interface AbnormalParamStats {

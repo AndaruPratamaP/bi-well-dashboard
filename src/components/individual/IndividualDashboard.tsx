@@ -25,7 +25,8 @@ import {
   getEmployeesStatusForYear,
   getEmployeeQuickVitals,
   getEmployeeTimeSeries,
-  getEmployeeLabTable
+  getEmployeeLabTable,
+  PARAMETER_EXPLANATIONS
 } from '../../utils/mcuAnalytics';
 import { ParamCategory } from '../../types/mcu';
 
@@ -335,12 +336,26 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
             </div>
           </div>
 
-          {/* Status Kelayakan MCU Badge (SDD Rule) */}
+          {/* Status Kelayakan MCU Badge & Klaster Pegawai */}
           <div className="flex flex-col sm:items-end">
             <span className="text-xs text-bi-200 font-medium mb-1">
               Hasil MCU Terakhir ({selectedYear})
             </span>
             <div className="flex items-center gap-2">
+              {employeeStatus?.healthClass && (
+                <span className={`px-2.5 py-1.5 rounded-xl text-xs font-black border backdrop-blur ${
+                  employeeStatus.healthClass === 'Kelas A'
+                    ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200'
+                    : employeeStatus.healthClass === 'Kelas B'
+                    ? 'bg-blue-500/20 border-blue-400/40 text-blue-200'
+                    : employeeStatus.healthClass === 'Kelas C'
+                    ? 'bg-amber-500/20 border-amber-400/40 text-amber-200'
+                    : 'bg-red-500/20 border-red-400/40 text-red-200'
+                }`}>
+                  {employeeStatus.healthClass}
+                </span>
+              )}
+
               {employeeStatus?.workFitnessStatus === 'Fit to Work' ? (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 backdrop-blur">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -591,6 +606,7 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
                           const hist2024 = row.history.find(h => h.tahun === 2024);
                           const hist2025 = row.history.find(h => h.tahun === 2025);
                           const hist2026 = row.history.find(h => h.tahun === 2026);
+                          const paramInfo = PARAMETER_EXPLANATIONS[row.idParam];
 
                           return (
                             <tr
@@ -600,7 +616,43 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
                               }`}
                             >
                               <td className="px-5 py-3 font-semibold text-slate-900 whitespace-nowrap">
-                                {row.namaParameter}
+                                <div className="flex items-center gap-1.5">
+                                  <span>{row.namaParameter}</span>
+                                  {paramInfo && (
+                                    <div className="relative inline-flex items-center group/tooltip">
+                                      <button
+                                        type="button"
+                                        tabIndex={0}
+                                        className="w-4 h-4 rounded-full bg-slate-100 hover:bg-bi-100 text-slate-400 hover:text-bi-700 flex items-center justify-center transition-colors cursor-help focus:outline-none"
+                                        aria-label={`Informasi medis ${row.namaParameter}`}
+                                      >
+                                        <Info className="w-2.5 h-2.5" />
+                                      </button>
+
+                                      {/* Floating Tooltip Popover on Hover */}
+                                      <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden group-hover/tooltip:block group-focus-within/tooltip:block z-50 w-72 p-3 bg-slate-900/95 text-white rounded-xl shadow-2xl backdrop-blur-sm border border-slate-700/80 pointer-events-none transition-all duration-150">
+                                        <div className="flex items-start justify-between gap-2 border-b border-slate-700 pb-1.5 mb-2">
+                                          <div>
+                                            <div className="text-xs font-bold text-bi-200">{paramInfo.fullName}</div>
+                                            <div className="text-[10px] text-slate-400">Kode: {row.idParam} | Satuan: {row.satuan}</div>
+                                          </div>
+                                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-bi-800/80 text-bi-200 whitespace-nowrap">
+                                            Info Medis
+                                          </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-200 leading-relaxed mb-2.5 font-normal whitespace-normal">
+                                          {paramInfo.explanation}
+                                        </p>
+                                        <div className="text-[10px] text-emerald-300 font-medium bg-emerald-950/70 p-2 rounded-lg border border-emerald-800/50 flex items-center gap-1.5 whitespace-normal">
+                                          <span className="font-bold">✓ Rujukan:</span>
+                                          <span>{paramInfo.normalInfo}</span>
+                                        </div>
+                                        {/* Tooltip Arrow */}
+                                        <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-slate-900 rotate-45 border-l border-b border-slate-700"></div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </td>
 
                               {showHistoryColumns ? (

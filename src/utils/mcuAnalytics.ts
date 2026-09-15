@@ -5,10 +5,12 @@ import {
   ParameterReferensi,
   MCURecord,
   MCUDetail,
+  HealthClass,
   RiskLevel,
   WorkFitnessStatus,
   EmployeeMCUStatus,
   DepartmentRiskStats,
+  AgeGroupClassStats,
   AbnormalParamStats,
   QuickVital
 } from '../types/mcu';
@@ -43,6 +45,20 @@ export function getRecordDetails(mcuId: string): MCUDetail[] {
 }
 
 /**
+ * Classify health class (Kelas A - D) based on abnormal count
+ * - Kelas A: 0 abnormal (Sehat Prima)
+ * - Kelas B: 1 abnormal (Risiko Rendah / Catatan Ringan)
+ * - Kelas C: 2 - 3 abnormal (Risiko Sedang)
+ * - Kelas D: > 3 abnormal (Risiko Tinggi / Perhatian Khusus)
+ */
+export function getHealthClass(abnormalCount: number): HealthClass {
+  if (abnormalCount === 0) return 'Kelas A';
+  if (abnormalCount === 1) return 'Kelas B';
+  if (abnormalCount <= 3) return 'Kelas C';
+  return 'Kelas D';
+}
+
+/**
  * Classify risk level based on abnormal count
  */
 export function getRiskLevel(abnormalCount: number): RiskLevel {
@@ -59,6 +75,83 @@ export function getWorkFitnessStatus(abnormalCount: number): WorkFitnessStatus {
   if (abnormalCount <= 3) return 'Fit to Work with Note';
   return 'Unfit';
 }
+
+/**
+ * Friendly layperson explanations for all 11 medical lab parameters
+ */
+export const PARAMETER_EXPLANATIONS: Record<string, {
+  shortName: string;
+  fullName: string;
+  explanation: string;
+  normalInfo: string;
+}> = {
+  P01: {
+    shortName: 'BMI',
+    fullName: 'Body Mass Index (Indeks Massa Tubuh)',
+    explanation: 'Ukuran perbandingan berat badan terhadap tinggi badan untuk menilai apakah berat badan tergolong kurus, ideal, berlebih (overweight), atau obesitas.',
+    normalInfo: 'Rentang ideal rujukan medis: 18.5 - 24.9 kg/m²'
+  },
+  P02: {
+    shortName: 'Sistolik',
+    fullName: 'Tekanan Darah Sistolik (Angka Atas Tensi)',
+    explanation: 'Tekanan darah di pembuluh arteri saat jantung berkontraksi memompa darah ke seluruh tubuh. Angka tinggi menandakan beban kerja pompa jantung meningkat.',
+    normalInfo: 'Rentang normal: 90 - 120 mmHg'
+  },
+  P03: {
+    shortName: 'Diastolik',
+    fullName: 'Tekanan Darah Diastolik (Angka Bawah Tensi)',
+    explanation: 'Tekanan darah di pembuluh arteri saat otot jantung beristirahat di antara dua detakan. Menggambarkan kelenturan dan elastisitas pembuluh darah saat rileks.',
+    normalInfo: 'Rentang normal: 60 - 80 mmHg'
+  },
+  H01: {
+    shortName: 'Leukosit',
+    fullName: 'Sel Darah Putih (Leukosit)',
+    explanation: 'Sel kekebalan tubuh yang bertindak sebagai tentara pertahanan untuk melawan infeksi bakteri, virus, atau peradangan di dalam tubuh.',
+    normalInfo: 'Rentang normal: 4.0 - 10.0 ribu/uL'
+  },
+  H02: {
+    shortName: 'Hemoglobin',
+    fullName: 'Hemoglobin (Hb)',
+    explanation: 'Protein dalam sel darah merah pembawa oksigen dari paru-paru ke seluruh organ tubuh. Kadar rendah menandakan anemia (mudah lelah, pucat, dan kurang fokus).',
+    normalInfo: 'Rentang normal: 12.0 - 16.0 g/dL'
+  },
+  H03: {
+    shortName: 'Trombosit',
+    fullName: 'Keping Darah (Platelet / Trombosit)',
+    explanation: 'Komponen darah yang berfungsi membekukan darah dan menutup luka. Kadar terlalu rendah berisiko memicu pendarahan spontan atau memar.',
+    normalInfo: 'Rentang normal: 150 - 400 ribu/uL'
+  },
+  K01: {
+    shortName: 'Kolesterol Total',
+    fullName: 'Kolesterol Total',
+    explanation: 'Kadar seluruh lemak kolesterol di dalam aliran darah. Jika berlebihan dapat mengendap dan menyumbat pembuluh darah jantung (jantung koroner) maupun otak (stroke).',
+    normalInfo: 'Target aman: < 200 mg/dL'
+  },
+  K02: {
+    shortName: 'Glukosa Puasa',
+    fullName: 'Gula Darah Puasa (GDP)',
+    explanation: 'Kadar gula dalam darah setelah berpuasa minimal 8-10 jam. Pemeriksaan kunci untuk mendeteksi risiko pradiabetes dan penyakit kencing manis (diabetes melitus).',
+    normalInfo: 'Rentang normal: 70 - 100 mg/dL'
+  },
+  K03: {
+    shortName: 'Asam Urat',
+    fullName: 'Asam Urat (Uric Acid)',
+    explanation: 'Zat sisa hasil metabolisme zat purin dari makanan (jeroan, daging merah, emping). Jika berlebih dapat mengkristal di persendian dan memicu radang nyeri (gout).',
+    normalInfo: 'Rentang normal: 3.4 - 7.0 mg/dL'
+  },
+  K04: {
+    shortName: 'SGOT (AST)',
+    fullName: 'Serum Glutamic Oxaloacetic Transaminase',
+    explanation: 'Enzim yang terutama berada di sel organ hati (liver) dan otot jantung. Jika sel hati mengalami radang atau kerusakan, enzim ini akan bocor ke darah sehingga kadarnya naik.',
+    normalInfo: 'Rentang normal: 0 - 40 U/L'
+  },
+  K05: {
+    shortName: 'SGPT (ALT)',
+    fullName: 'Serum Glutamic Pyruvic Transaminase',
+    explanation: 'Enzim yang sangat spesifik mencerminkan kesehatan sel hati. Kenaikan kadar SGPT adalah alarm paling awal adanya gangguan hati atau perlemakan hati (fatty liver).',
+    normalInfo: 'Rentang normal: 0 - 41 U/L'
+  }
+};
 
 /**
  * Get employee status list for a specific year and optional department filter
@@ -95,6 +188,7 @@ export function getEmployeesStatusForYear(
     });
 
     const abnormalCount = abnormalDetails.length;
+    const healthClass = getHealthClass(abnormalCount);
     const riskLevel = getRiskLevel(abnormalCount);
     const workFitnessStatus = getWorkFitnessStatus(abnormalCount);
 
@@ -108,6 +202,7 @@ export function getEmployeesStatusForYear(
       tanggalMcu: record.Tanggal_MCU,
       idMcu: record.ID_MCU,
       abnormalCount,
+      healthClass,
       riskLevel,
       workFitnessStatus,
       abnormalParams
@@ -119,9 +214,10 @@ export function getEmployeesStatusForYear(
 
 /**
  * Calculate 100% Stacked Bar data for Department Risk Demographics
+ * If deptFilter is provided (and not 'Semua'), only returns that single department so it focuses in the center!
  */
-export function getDepartmentRiskDemographics(year: number): DepartmentRiskStats[] {
-  const departments = departmentList;
+export function getDepartmentRiskDemographics(year: number, deptFilter?: string): DepartmentRiskStats[] {
+  const departments = (deptFilter && deptFilter !== 'Semua') ? [deptFilter] : departmentList;
   const statusList = getEmployeesStatusForYear(year);
 
   return departments.map(dept => {
@@ -132,6 +228,14 @@ export function getDepartmentRiskDemographics(year: number): DepartmentRiskStats
       return {
         departemen: dept,
         totalPegawai: 0,
+        kelasACount: 0,
+        kelasAPct: 0,
+        kelasBCount: 0,
+        kelasBPct: 0,
+        kelasCCount: 0,
+        kelasCPct: 0,
+        kelasDCount: 0,
+        kelasDPct: 0,
         sehatCount: 0,
         sehatPct: 0,
         ringanCount: 0,
@@ -141,6 +245,11 @@ export function getDepartmentRiskDemographics(year: number): DepartmentRiskStats
       };
     }
 
+    const kelasACount = deptEmployees.filter(s => s.healthClass === 'Kelas A').length;
+    const kelasBCount = deptEmployees.filter(s => s.healthClass === 'Kelas B').length;
+    const kelasCCount = deptEmployees.filter(s => s.healthClass === 'Kelas C').length;
+    const kelasDCount = deptEmployees.filter(s => s.healthClass === 'Kelas D').length;
+
     const sehatCount = deptEmployees.filter(s => s.riskLevel === 'Sehat').length;
     const ringanCount = deptEmployees.filter(s => s.riskLevel === 'Risiko Ringan').length;
     const tinggiCount = deptEmployees.filter(s => s.riskLevel === 'Risiko Tinggi').length;
@@ -148,12 +257,79 @@ export function getDepartmentRiskDemographics(year: number): DepartmentRiskStats
     return {
       departemen: dept,
       totalPegawai: total,
+      kelasACount,
+      kelasAPct: parseFloat(((kelasACount / total) * 100).toFixed(1)),
+      kelasBCount,
+      kelasBPct: parseFloat(((kelasBCount / total) * 100).toFixed(1)),
+      kelasCCount,
+      kelasCPct: parseFloat(((kelasCCount / total) * 100).toFixed(1)),
+      kelasDCount,
+      kelasDPct: parseFloat(((kelasDCount / total) * 100).toFixed(1)),
       sehatCount,
       sehatPct: parseFloat(((sehatCount / total) * 100).toFixed(1)),
       ringanCount,
       ringanPct: parseFloat(((ringanCount / total) * 100).toFixed(1)),
       tinggiCount,
       tinggiPct: parseFloat(((tinggiCount / total) * 100).toFixed(1))
+    };
+  });
+}
+
+/**
+ * Calculate 100% Stacked Bar data for Age Groups vs Health Classes (Kelas A - D)
+ * Sumbu X: Usia (<30, 30<X<40, 40<X<50, 50<)
+ * Sumbu Y: Persentase Pegawai (0 - 100%)
+ */
+export function getAgeGroupClassDemographics(year: number, deptFilter?: string): AgeGroupClassStats[] {
+  const statusList = getEmployeesStatusForYear(year, deptFilter);
+  const ageCategories: ('< 30' | '30 < X < 40' | '40 < X < 50' | '50 <')[] = [
+    '< 30',
+    '30 < X < 40',
+    '40 < X < 50',
+    '50 <'
+  ];
+
+  return ageCategories.map(grp => {
+    const matched = statusList.filter(s => {
+      if (grp === '< 30') return s.usia < 30;
+      if (grp === '30 < X < 40') return s.usia >= 30 && s.usia < 40;
+      if (grp === '40 < X < 50') return s.usia >= 40 && s.usia < 50;
+      return s.usia >= 50;
+    });
+
+    const total = matched.length;
+
+    if (total === 0) {
+      return {
+        ageGroup: grp,
+        total: 0,
+        kelasACount: 0,
+        kelasAPct: 0,
+        kelasBCount: 0,
+        kelasBPct: 0,
+        kelasCCount: 0,
+        kelasCPct: 0,
+        kelasDCount: 0,
+        kelasDPct: 0
+      };
+    }
+
+    const aCount = matched.filter(s => s.healthClass === 'Kelas A').length;
+    const bCount = matched.filter(s => s.healthClass === 'Kelas B').length;
+    const cCount = matched.filter(s => s.healthClass === 'Kelas C').length;
+    const dCount = matched.filter(s => s.healthClass === 'Kelas D').length;
+
+    return {
+      ageGroup: grp,
+      total,
+      kelasACount: aCount,
+      kelasAPct: parseFloat(((aCount / total) * 100).toFixed(1)),
+      kelasBCount: bCount,
+      kelasBPct: parseFloat(((bCount / total) * 100).toFixed(1)),
+      kelasCCount: cCount,
+      kelasCPct: parseFloat(((cCount / total) * 100).toFixed(1)),
+      kelasDCount: dCount,
+      kelasDPct: parseFloat(((dCount / total) * 100).toFixed(1))
     };
   });
 }

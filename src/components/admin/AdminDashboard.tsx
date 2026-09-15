@@ -18,6 +18,7 @@ import {
   data,
   getEmployeesStatusForYear,
   getDepartmentRiskDemographics,
+  getAgeGroupClassDemographics,
   getTop5AbnormalParameters,
   getAnnualParameterAverages,
   paramMap
@@ -47,42 +48,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Total Employees
   const totalEmployees = employeeStatuses.length;
 
-  // Health risk counts
-  const sehatCount = employeeStatuses.filter(e => e.riskLevel === 'Sehat').length;
-  const ringanCount = employeeStatuses.filter(e => e.riskLevel === 'Risiko Ringan').length;
-  const tinggiCount = employeeStatuses.filter(e => e.riskLevel === 'Risiko Tinggi').length;
+  // Class counts (Kelas A, B, C, D)
+  const kelasACount = employeeStatuses.filter(e => e.healthClass === 'Kelas A').length;
+  const kelasBCount = employeeStatuses.filter(e => e.healthClass === 'Kelas B').length;
+  const kelasCCount = employeeStatuses.filter(e => e.healthClass === 'Kelas C').length;
+  const kelasDCount = employeeStatuses.filter(e => e.healthClass === 'Kelas D').length;
 
-  // Prevalence of High Risk (>3 abnormal)
-  const highRiskPct = totalEmployees > 0 ? ((tinggiCount / totalEmployees) * 100).toFixed(1) : '0.0';
+  // Self-explanatory metrics: exact percentages
+  const kelasAPct = totalEmployees > 0 ? ((kelasACount / totalEmployees) * 100).toFixed(1) : '0.0';
+  const kelasBPct = totalEmployees > 0 ? ((kelasBCount / totalEmployees) * 100).toFixed(1) : '0.0';
+  const kelasCPct = totalEmployees > 0 ? ((kelasCCount / totalEmployees) * 100).toFixed(1) : '0.0';
+  const kelasDPct = totalEmployees > 0 ? ((kelasDCount / totalEmployees) * 100).toFixed(1) : '0.0';
 
-  // Organizational Health Index (%)
-  // Based on normal parameter results ratio in the selected cohort
-  const orgHealthIndex = useMemo(() => {
-    const relevantRecords = data.mcu_records.filter(r => {
-      if (r.Tahun !== selectedYear) return false;
-      if (selectedDept !== 'Semua') {
-        const emp = data.pegawai.find(p => p.NIP === r.NIP);
-        return emp?.Departemen === selectedDept;
-      }
-      return true;
-    });
-    const recordIds = new Set(relevantRecords.map(r => r.ID_MCU));
-    const details = data.mcu_details.filter(d => recordIds.has(d.ID_MCU));
-    if (details.length === 0) return '0.0';
-    const normalDetails = details.filter(d => d.Status === 'Normal').length;
-    return ((normalDetails / details.length) * 100).toFixed(1);
+  // 2. Department Demographics (100% Stacked Bar Chart with Kelas A - D)
+  // When selectedDept !== 'Semua', returns only that single department centered in chart
+  const deptRiskStats = useMemo(() => {
+    return getDepartmentRiskDemographics(selectedYear, selectedDept);
   }, [selectedYear, selectedDept]);
 
-  // 2. Department Demographics (100% Stacked Bar Chart)
-  const deptRiskStats = useMemo(() => {
-    return getDepartmentRiskDemographics(selectedYear);
-  }, [selectedYear]);
-
-  const stackedBarOption = useMemo(() => {
+  const deptStackedBarOption = useMemo(() => {
     const depts = deptRiskStats.map(d => d.departemen);
-    const sehatPcts = deptRiskStats.map(d => d.sehatPct);
-    const ringanPcts = deptRiskStats.map(d => d.ringanPct);
-    const tinggiPcts = deptRiskStats.map(d => d.tinggiPct);
+    const aPcts = deptRiskStats.map(d => d.kelasAPct);
+    const bPcts = deptRiskStats.map(d => d.kelasBPct);
+    const cPcts = deptRiskStats.map(d => d.kelasCPct);
+    const dPcts = deptRiskStats.map(d => d.kelasDPct);
+
+    const isSingleDept = selectedDept !== 'Semua';
 
     return {
       tooltip: {
@@ -95,9 +86,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           params.forEach(p => {
             const color = p.color;
             let count = 0;
-            if (p.seriesName === 'Sehat') count = stat?.sehatCount || 0;
-            else if (p.seriesName === 'Risiko Ringan') count = stat?.ringanCount || 0;
-            else if (p.seriesName === 'Risiko Tinggi') count = stat?.tinggiCount || 0;
+            if (p.seriesName.includes('Kelas A')) count = stat?.kelasACount || 0;
+            else if (p.seriesName.includes('Kelas B')) count = stat?.kelasBCount || 0;
+            else if (p.seriesName.includes('Kelas C')) count = stat?.kelasCCount || 0;
+            else if (p.seriesName.includes('Kelas D')) count = stat?.kelasDCount || 0;
 
             html += `
               <div class="flex items-center justify-between gap-4 text-xs py-0.5">
@@ -114,13 +106,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       },
       legend: {
         top: 'bottom',
-        data: ['Sehat', 'Risiko Ringan', 'Risiko Tinggi'],
-        textStyle: { color: '#475569', fontSize: 12 }
+        data: ['Kelas A (0 Abnormal)', 'Kelas B (1 Abnormal)', 'Kelas C (2-3 Abnormal)', 'Kelas D (>3 Abnormal)'],
+        textStyle: { color: '#475569', fontSize: 11 }
       },
       grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '12%',
+        left: isSingleDept ? '20%' : '3%',
+        right: isSingleDept ? '20%' : '4%',
+        bottom: '14%',
         top: '8%',
         containLabel: true
       },
@@ -128,7 +120,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         type: 'category',
         data: depts,
         axisLine: { lineStyle: { color: '#cbd5e1' } },
-        axisLabel: { color: '#334155', fontWeight: 600 }
+        axisLabel: { color: '#1e293b', fontWeight: 600, fontSize: isSingleDept ? 13 : 11 }
       },
       yAxis: {
         type: 'value',
@@ -141,34 +133,166 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       },
       series: [
         {
-          name: 'Sehat',
+          name: 'Kelas A (0 Abnormal)',
           type: 'bar',
-          stack: 'total',
+          stack: 'totalDept',
+          barMaxWidth: 70,
+          barWidth: isSingleDept ? 65 : undefined,
           emphasis: { focus: 'series' },
           itemStyle: { color: '#10b981', borderRadius: [0, 0, 4, 4] },
-          data: sehatPcts
+          data: aPcts
         },
         {
-          name: 'Risiko Ringan',
+          name: 'Kelas B (1 Abnormal)',
           type: 'bar',
-          stack: 'total',
+          stack: 'totalDept',
+          barMaxWidth: 70,
+          barWidth: isSingleDept ? 65 : undefined,
+          emphasis: { focus: 'series' },
+          itemStyle: { color: '#3b82f6' },
+          data: bPcts
+        },
+        {
+          name: 'Kelas C (2-3 Abnormal)',
+          type: 'bar',
+          stack: 'totalDept',
+          barMaxWidth: 70,
+          barWidth: isSingleDept ? 65 : undefined,
           emphasis: { focus: 'series' },
           itemStyle: { color: '#f59e0b' },
-          data: ringanPcts
+          data: cPcts
         },
         {
-          name: 'Risiko Tinggi',
+          name: 'Kelas D (>3 Abnormal)',
           type: 'bar',
-          stack: 'total',
+          stack: 'totalDept',
+          barMaxWidth: 70,
+          barWidth: isSingleDept ? 65 : undefined,
           emphasis: { focus: 'series' },
           itemStyle: { color: '#ef4444', borderRadius: [4, 4, 0, 0] },
-          data: tinggiPcts
+          data: dPcts
         }
       ]
     };
-  }, [deptRiskStats]);
+  }, [deptRiskStats, selectedDept]);
 
-  // 3. Top 5 Parameter Abnormalities (Horizontal Bar Chart)
+  // 3. Age Groups vs Health Classes (100% Stacked Bar Chart)
+  // Sumbu X: Usia (<30, 30<X<40, 40<X<50, 50<)
+  // Sumbu Y: Persentase orang (0 - 100%)
+  // Kategori Stacked: Kelas A, Kelas B, Kelas C, Kelas D
+  const ageGroupClassStats = useMemo(() => {
+    return getAgeGroupClassDemographics(selectedYear, selectedDept);
+  }, [selectedYear, selectedDept]);
+
+  const ageStackedBarOption = useMemo(() => {
+    const ageLabels = ageGroupClassStats.map(a => a.ageGroup);
+    const aPcts = ageGroupClassStats.map(a => a.kelasAPct);
+    const bPcts = ageGroupClassStats.map(a => a.kelasBPct);
+    const cPcts = ageGroupClassStats.map(a => a.kelasCPct);
+    const dPcts = ageGroupClassStats.map(a => a.kelasDPct);
+
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: (params: any[]) => {
+          const groupName = params[0].name;
+          const stat = ageGroupClassStats.find(a => a.ageGroup === groupName);
+          let html = `<div class="font-bold text-slate-800 mb-1.5 pb-1 border-b border-slate-200">Rentang Usia: ${groupName} (Total: ${stat?.total} Pegawai)</div>`;
+          if (!stat || stat.total === 0) {
+            html += `<div class="text-xs text-slate-400 italic py-1">Tidak ada pegawai pada rentang usia ini</div>`;
+            return html;
+          }
+          params.forEach(p => {
+            const color = p.color;
+            let count = 0;
+            if (p.seriesName.includes('Kelas A')) count = stat.kelasACount;
+            else if (p.seriesName.includes('Kelas B')) count = stat.kelasBCount;
+            else if (p.seriesName.includes('Kelas C')) count = stat.kelasCCount;
+            else if (p.seriesName.includes('Kelas D')) count = stat.kelasDCount;
+
+            html += `
+              <div class="flex items-center justify-between gap-4 text-xs py-0.5">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${color}"></span>
+                  <span class="text-slate-600">${p.seriesName}</span>
+                </span>
+                <span class="font-bold text-slate-900">${p.value}% (${count} org)</span>
+              </div>
+            `;
+          });
+          return html;
+        }
+      },
+      legend: {
+        top: 'bottom',
+        data: ['Kelas A (0 Abnormal)', 'Kelas B (1 Abnormal)', 'Kelas C (2-3 Abnormal)', 'Kelas D (>3 Abnormal)'],
+        textStyle: { color: '#475569', fontSize: 11 }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '14%',
+        top: '8%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: ageLabels,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        axisLabel: { color: '#1e293b', fontWeight: 600, fontSize: 12 }
+      },
+      yAxis: {
+        type: 'value',
+        max: 100,
+        axisLabel: {
+          formatter: '{value}%',
+          color: '#64748b'
+        },
+        splitLine: { lineStyle: { stroke: '#f1f5f9', type: 'dashed' } }
+      },
+      series: [
+        {
+          name: 'Kelas A (0 Abnormal)',
+          type: 'bar',
+          stack: 'totalAge',
+          barMaxWidth: 60,
+          emphasis: { focus: 'series' },
+          itemStyle: { color: '#10b981', borderRadius: [0, 0, 4, 4] },
+          data: aPcts
+        },
+        {
+          name: 'Kelas B (1 Abnormal)',
+          type: 'bar',
+          stack: 'totalAge',
+          barMaxWidth: 60,
+          emphasis: { focus: 'series' },
+          itemStyle: { color: '#3b82f6' },
+          data: bPcts
+        },
+        {
+          name: 'Kelas C (2-3 Abnormal)',
+          type: 'bar',
+          stack: 'totalAge',
+          barMaxWidth: 60,
+          emphasis: { focus: 'series' },
+          itemStyle: { color: '#f59e0b' },
+          data: cPcts
+        },
+        {
+          name: 'Kelas D (>3 Abnormal)',
+          type: 'bar',
+          stack: 'totalAge',
+          barMaxWidth: 60,
+          emphasis: { focus: 'series' },
+          itemStyle: { color: '#ef4444', borderRadius: [4, 4, 0, 0] },
+          data: dPcts
+        }
+      ]
+    };
+  }, [ageGroupClassStats]);
+
+  // 4. Top 5 Parameter Abnormalities (Horizontal Bar Chart)
   const top5Abnormal = useMemo(() => {
     return getTop5AbnormalParameters(selectedYear, selectedDept);
   }, [selectedYear, selectedDept]);
@@ -246,7 +370,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
   }, [top5Abnormal]);
 
-  // 4. Yearly Trend Chart (Multi-Line Chart for chosen parameter)
+  // 5. Yearly Trend Chart (Multi-Line Chart for chosen parameter)
   const annualTrends = useMemo(() => {
     return getAnnualParameterAverages(selectedTrendParam, selectedDept);
   }, [selectedTrendParam, selectedDept]);
@@ -330,9 +454,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
   }, [annualTrends]);
 
-  // High risk employees for confidential follow-up
+  // High risk employees (Kelas D: >3 abnormal) for confidential follow-up
   const highRiskEmployees = useMemo(() => {
-    return employeeStatuses.filter(e => e.riskLevel === 'Risiko Tinggi');
+    return employeeStatuses.filter(e => e.healthClass === 'Kelas D');
   }, [employeeStatuses]);
 
   return (
@@ -389,7 +513,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* Scorecards (Top Row) */}
+      {/* Scorecards (Top Row) - Fully Transparent & Self-Explanatory */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card 1: Total Pegawai Mengikuti MCU */}
@@ -412,53 +536,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Indeks Kesehatan Organisasi */}
+        {/* Card 2: Pegawai Sehat Prima (Kelas A) - Self-Explanatory Metric */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Indeks Kesehatan Organisasi
+              Sehat Prima (Kelas A)
             </span>
             <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
               <Heart className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-emerald-600">{orgHealthIndex}%</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-              Optimal
+            <span className="text-3xl font-extrabold text-emerald-600">{kelasAPct}%</span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+              {kelasACount} Pegawai
             </span>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            Rasio parameter lab berada pada rentang normal
+            0 parameter abnormal (Fit to Work tanpa catatan)
           </p>
         </div>
 
-        {/* Card 3: Prevalensi Risiko Tinggi */}
+        {/* Card 3: Prevalensi Risiko Tinggi (Kelas D) */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-red-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Prevalensi Risiko Tinggi
+              Risiko Tinggi (Kelas D)
             </span>
             <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
               <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-red-600">{highRiskPct}%</span>
+            <span className="text-3xl font-extrabold text-red-600">{kelasDPct}%</span>
             <span className="text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded">
-              {tinggiCount} Pegawai
+              {kelasDCount} Pegawai
             </span>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            Pegawai dengan &gt;3 parameter hasil abnormal
+            &gt;3 parameter abnormal (Perhatian khusus dokter)
           </p>
         </div>
 
-        {/* Card 4: Demografi Distribusi Kesehatan */}
+        {/* Card 4: Distribusi Klaster Kelas A - D */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-bi-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Status Keseluruhan
+              Distribusi Klaster Pegawai
             </span>
             <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
               <Activity className="w-5 h-5" />
@@ -468,58 +592,97 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                Sehat (0 abnormal):
+                Kelas A (0 abn):
               </span>
-              <span className="font-bold text-slate-900">{sehatCount} org ({totalEmployees ? ((sehatCount/totalEmployees)*100).toFixed(0) : 0}%)</span>
+              <span className="font-bold text-slate-900">{kelasACount} org ({kelasAPct}%)</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-600">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                Kelas B (1 abn):
+              </span>
+              <span className="font-bold text-slate-900">{kelasBCount} org ({kelasBPct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                Risiko Ringan (1-3):
+                Kelas C (2-3 abn):
               </span>
-              <span className="font-bold text-slate-900">{ringanCount} org ({totalEmployees ? ((ringanCount/totalEmployees)*100).toFixed(0) : 0}%)</span>
+              <span className="font-bold text-slate-900">{kelasCCount} org ({kelasCPct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-                Risiko Tinggi (&gt;3):
+                Kelas D (&gt;3 abn):
               </span>
-              <span className="font-bold text-slate-900">{tinggiCount} org ({highRiskPct}%)</span>
+              <span className="font-bold text-slate-900">{kelasDCount} org ({kelasDPct}%)</span>
             </div>
           </div>
         </div>
 
       </div>
 
-      {/* Visualisasi 1 & 2 (Grid 2 Kolom) */}
+      {/* Visualisasi Baris 1: Demografi Departemen & Demografi Usia (Grid 2 Kolom) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Grafik 1: Demografi Risiko per Departemen (100% Stacked Bar Chart) */}
+        {/* Grafik 1: Demografi Risiko per Departemen (100% Stacked Bar Chart - Fokus Single Dept when filtered) */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-base font-bold text-slate-900">
-                Demografi Risiko per Departemen
+                {selectedDept !== 'Semua' ? `Demografi Klaster: ${selectedDept}` : 'Demografi Klaster per Departemen'}
               </h2>
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                100% Stacked Bar
+                {selectedDept !== 'Semua' ? 'Fokus Departemen' : '100% Stacked Bar'}
               </span>
             </div>
             <p className="text-xs text-slate-500 mb-4">
-              Proporsi kategori Sehat (Hijau), Risiko Ringan (Kuning), dan Risiko Tinggi (Merah) per departemen.
+              {selectedDept !== 'Semua'
+                ? `Fokus analisis proporsi Kelas A s/d D untuk departemen ${selectedDept} (${deptRiskStats[0]?.totalPegawai} pegawai).`
+                : 'Proporsi klaster Kelas A (Hijau), Kelas B (Biru), Kelas C (Kuning), dan Kelas D (Merah) per departemen.'}
             </p>
           </div>
 
           <div className="h-80 w-full">
             <ReactECharts
-              option={stackedBarOption}
+              option={deptStackedBarOption}
               style={{ height: '100%', width: '100%' }}
               opts={{ renderer: 'svg' }}
             />
           </div>
         </div>
 
-        {/* Grafik 2: Top 5 Parameter Abnormalitas (Horizontal Bar Chart) */}
+        {/* Grafik 2: Distribusi Klaster Berdasarkan Kelompok Usia (100% Stacked Bar Chart) */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-base font-bold text-slate-900">
+                Distribusi Klaster Berdasarkan Usia
+              </h2>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-bi-50 text-bi-900 border border-bi-200">
+                Kohort Usia (100% Stacked)
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              Sumbu X mewakili kelompok usia (&lt;30, 30&lt;X&lt;40, 40&lt;X&lt;50, 50&lt;) dan sumbu Y persentase pegawai.
+            </p>
+          </div>
+
+          <div className="h-80 w-full">
+            <ReactECharts
+              option={ageStackedBarOption}
+              style={{ height: '100%', width: '100%' }}
+              opts={{ renderer: 'svg' }}
+            />
+          </div>
+        </div>
+
+      </div>
+
+      {/* Visualisasi Baris 2: Top 5 Parameter Abnormalitas & Tren Tahunan (Grid 2 Kolom) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Grafik 3: Top 5 Parameter Abnormalitas (Horizontal Bar Chart) */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -544,46 +707,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-      </div>
-
-      {/* Visualisasi 3: Tren Rata-rata Parameter Tahunan (Multi-Line Chart) */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        {/* Grafik 4: Tren Rata-rata Parameter Tahunan (Multi-Line Chart) */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-bi-900" />
-              <h2 className="text-base font-bold text-slate-900">
-                Tren Rata-rata Parameter Tahunan (2024 - 2026)
-              </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-bi-900" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Tren Rata-rata Tahunan (2024 - 2026)
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedTrendParam}
+                  onChange={e => setSelectedTrendParam(e.target.value)}
+                  className="text-xs font-bold px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-bi-900 focus:outline-none focus:ring-2 focus:ring-bi-900"
+                >
+                  {data.parameters.map(p => (
+                    <option key={p.ID_Param} value={p.ID_Param}>
+                      [{p.Kategori}] {p.Nama_Parameter} ({p.Satuan})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Pantau perkembangan nilai rata-rata indikator kesehatan seluruh pegawai dari tahun ke tahun.
+            <p className="text-xs text-slate-500 mb-2">
+              Pantau perkembangan rata-rata indikator kesehatan pegawai dari tahun ke tahun.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-600">Pilih Parameter:</span>
-            <select
-              value={selectedTrendParam}
-              onChange={e => setSelectedTrendParam(e.target.value)}
-              className="text-xs font-bold px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-bi-900 focus:outline-none focus:ring-2 focus:ring-bi-900"
-            >
-              {data.parameters.map(p => (
-                <option key={p.ID_Param} value={p.ID_Param}>
-                  [{p.Kategori}] {p.Nama_Parameter} ({p.Satuan})
-                </option>
-              ))}
-            </select>
+          <div className="h-80 w-full">
+            <ReactECharts
+              option={trendLineOption}
+              style={{ height: '100%', width: '100%' }}
+              opts={{ renderer: 'svg' }}
+            />
           </div>
         </div>
 
-        <div className="h-80 w-full">
-          <ReactECharts
-            option={trendLineOption}
-            style={{ height: '100%', width: '100%' }}
-            opts={{ renderer: 'svg' }}
-          />
-        </div>
       </div>
 
       {/* Executive Health Action & High-Risk Medical Intervention Table */}
@@ -592,10 +754,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div>
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-600" />
-              <span>Daftar Pegawai Perlu Perhatian Khusus (Risiko Tinggi &gt; 3 Parameter Abnormal)</span>
+              <span>Daftar Pegawai Perlu Perhatian Khusus (Klaster Kelas D / &gt; 3 Parameter Abnormal)</span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Rekomendasi tindak lanjut program konsultasi medis & wellness coaching DSDM.
+              Rekomendasi tindak lanjut program konsultasi dokter spesialis & wellness coaching DSDM.
             </p>
           </div>
 
@@ -615,7 +777,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="px-5 py-3">NIP & Nama</th>
                   <th className="px-4 py-3">Departemen</th>
                   <th className="px-4 py-3">Usia / Gender</th>
-                  <th className="px-4 py-3 text-center">Jml Abnormal</th>
+                  <th className="px-4 py-3 text-center">Klaster & Abnormalitas</th>
                   <th className="px-4 py-3">Parameter yang Melebihi Batas Normal</th>
                   <th className="px-4 py-3 text-center">Status Kelayakan</th>
                   <th className="px-5 py-3 text-right">Aksi</th>
@@ -633,8 +795,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       {emp.usia} th ({emp.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'})
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full font-bold bg-red-100 text-red-700 text-xs">
-                        {emp.abnormalCount} Parameter
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full font-bold bg-red-100 text-red-700 text-xs">
+                        {emp.healthClass} ({emp.abnormalCount} Parameter)
                       </span>
                     </td>
                     <td className="px-4 py-3">
