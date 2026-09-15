@@ -5,6 +5,26 @@ const LOCAL_STORAGE_SUPABASE_URL = 'bi_well_supabase_url';
 const LOCAL_STORAGE_SUPABASE_KEY = 'bi_well_supabase_key';
 const LOCAL_STORAGE_EXTRA_DATA = 'bi_well_extra_mcu_data';
 
+// Helper to normalize Supabase URL (e.g. converting dashboard URL to API URL)
+export function normalizeSupabaseUrl(inputUrl: string): string {
+  if (!inputUrl) return '';
+  let url = inputUrl.trim();
+
+  // Jika pengguna menyalin URL dashboard: https://supabase.com/dashboard/project/<project_id>
+  const dashboardMatch = url.match(/supabase\.com\/dashboard\/project\/([a-z0-9_-]+)/i);
+  if (dashboardMatch && dashboardMatch[1]) {
+    return `https://${dashboardMatch[1]}.supabase.co`;
+  }
+
+  // Jika tanpa protokol
+  if (!/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+
+  // Hapus trailing slash
+  return url.replace(/\/+$/, '');
+}
+
 // Helper to get active Supabase credentials (from env or localStorage)
 export function getSupabaseCredentials(): { url: string; key: string } {
   const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -14,18 +34,24 @@ export function getSupabaseCredentials(): { url: string; key: string } {
   const localKey = localStorage.getItem(LOCAL_STORAGE_SUPABASE_KEY) || '';
 
   return {
-    url: localUrl || envUrl,
-    key: localKey || envKey
+    url: normalizeSupabaseUrl(localUrl || envUrl),
+    key: (localKey || envKey).trim()
   };
 }
 
 // Save credentials from UI
 export function setSupabaseCredentials(url: string, key: string) {
-  if (url) localStorage.setItem(LOCAL_STORAGE_SUPABASE_URL, url.trim());
+  const cleanUrl = normalizeSupabaseUrl(url);
+  if (cleanUrl) localStorage.setItem(LOCAL_STORAGE_SUPABASE_URL, cleanUrl);
   else localStorage.removeItem(LOCAL_STORAGE_SUPABASE_URL);
 
   if (key) localStorage.setItem(LOCAL_STORAGE_SUPABASE_KEY, key.trim());
   else localStorage.removeItem(LOCAL_STORAGE_SUPABASE_KEY);
+
+  // Invalidate cached client
+  cachedClient = null;
+  lastUsedUrl = '';
+  lastUsedKey = '';
 }
 
 // Create or return Supabase client instance
@@ -72,6 +98,17 @@ export async function testSupabaseConnection(): Promise<{ ok: boolean; message: 
   try {
     const { error } = await client.from('parameter_referensi').select('id_param').limit(1);
     if (error) {
+      // Jika tabel belum dibuat, koneksi ke endpoint Supabase sebenarnya sudah berhasil terotentikasi
+      if (
+        error.code === '42P01' || 
+        error.message.toLowerCase().includes('does not exist') ||
+        error.message.toLowerCase().includes('relation')
+      ) {
+        return {
+          ok: true,
+          message: 'Koneksi Supabase terhubung! (Tabel belum dibuat, jalankan script supabase_schema.sql di SQL Editor)'
+        };
+      }
       return { ok: false, message: `Koneksi gagal: ${error.message}` };
     }
     return { ok: true, message: 'Koneksi ke Supabase Cloud berhasil terhubung!' };

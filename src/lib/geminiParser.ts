@@ -144,24 +144,32 @@ export async function testGeminiApiKey(apiKey: string): Promise<{ ok: boolean; m
       return { ok: false, message: 'API key tidak memiliki akses ke model teks/vision (ListModels kosong).' };
     }
 
-    const testModel = candidates[0];
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Halo' }] }]
-      })
-    });
+    let lastError = '';
+    for (const testModel of candidates) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Halo' }] }]
+          })
+        });
 
-    if (res.ok) {
-      return { ok: true, message: `Koneksi Gemini berhasil terhubung! (Model: ${testModel})`, model: testModel };
-    } else {
-      const err = await res.text();
-      return { ok: false, message: `Gagal (${res.status}): ${err}` };
+        if (res.ok) {
+          return { ok: true, message: `Koneksi Gemini berhasil terhubung! (Model aktif: ${testModel})`, model: testModel };
+        } else {
+          const errText = await res.text();
+          lastError = `(${res.status}): ${errText}`;
+        }
+      } catch (innerErr: any) {
+        lastError = innerErr.message || String(innerErr);
+      }
     }
+
+    return { ok: false, message: `Semua model gagal diuji. Error terakhir ${lastError}` };
   } catch (err: any) {
     return { ok: false, message: `Error koneksi: ${err.message || err}` };
   }

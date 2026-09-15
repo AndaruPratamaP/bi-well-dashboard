@@ -17,7 +17,8 @@ import {
 import {
   getSupabaseCredentials,
   setSupabaseCredentials,
-  testSupabaseConnection
+  testSupabaseConnection,
+  normalizeSupabaseUrl
 } from '../../lib/supabase';
 
 interface ApiKeyConfigModalProps {
@@ -57,16 +58,20 @@ export const ApiKeyConfigModal: React.FC<ApiKeyConfigModalProps> = ({
   const handleTestSupabase = async () => {
     setTestingSupabase(true);
     setTestResult(null);
+    const cleanedUrl = normalizeSupabaseUrl(supabaseUrl);
+    setSupabaseUrl(cleanedUrl);
     // Temporary save to test
-    setSupabaseCredentials(supabaseUrl, supabaseKey);
+    setSupabaseCredentials(cleanedUrl, supabaseKey);
     const res = await testSupabaseConnection();
     setTestResult(res);
     setTestingSupabase(false);
   };
 
   const handleSave = () => {
+    const cleanedUrl = normalizeSupabaseUrl(supabaseUrl);
+    setSupabaseUrl(cleanedUrl);
     setGeminiApiKey(geminiKey);
-    setSupabaseCredentials(supabaseUrl, supabaseKey);
+    setSupabaseCredentials(cleanedUrl, supabaseKey);
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
@@ -198,9 +203,20 @@ export const ApiKeyConfigModal: React.FC<ApiKeyConfigModalProps> = ({
                 type="text"
                 placeholder="https://xyzcompany.supabase.co"
                 value={supabaseUrl}
-                onChange={e => setSupabaseUrl(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val.includes('supabase.com/dashboard/project/')) {
+                    setSupabaseUrl(normalizeSupabaseUrl(val));
+                  } else {
+                    setSupabaseUrl(val);
+                  }
+                }}
+                onBlur={() => setSupabaseUrl(normalizeSupabaseUrl(supabaseUrl))}
                 className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-bi-900 font-mono text-slate-800"
               />
+              <span className="block text-[10px] text-slate-500 mt-1">
+                Gunakan API URL (format: <code className="text-emerald-700 font-semibold">https://&lt;project-id&gt;.supabase.co</code>). Dapat dilihat di Supabase: <em>Project Settings &gt; API</em>.
+              </span>
             </div>
 
             <div>
