@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import {
   getGeminiApiKey,
-  setGeminiApiKey
+  setGeminiApiKey,
+  testGeminiApiKey
 } from '../../lib/geminiParser';
 import {
   getSupabaseCredentials,
@@ -35,11 +36,23 @@ export const ApiKeyConfigModal: React.FC<ApiKeyConfigModalProps> = ({
   const [supabaseUrl, setSupabaseUrl] = useState(initialSupabase.url);
   const [supabaseKey, setSupabaseKey] = useState(initialSupabase.key);
 
+  const [testingGemini, setTestingGemini] = useState(false);
+  const [geminiTestResult, setGeminiTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+
   const [testingSupabase, setTestingSupabase] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleTestGemini = async () => {
+    setTestingGemini(true);
+    setGeminiTestResult(null);
+    setGeminiApiKey(geminiKey);
+    const res = await testGeminiApiKey(geminiKey);
+    setGeminiTestResult(res);
+    setTestingGemini(false);
+  };
 
   const handleTestSupabase = async () => {
     setTestingSupabase(true);
@@ -130,8 +143,34 @@ export const ApiKeyConfigModal: React.FC<ApiKeyConfigModalProps> = ({
               onChange={e => setGeminiKey(e.target.value)}
               className="w-full text-xs px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-bi-900 font-mono text-slate-800"
             />
+            <div className="flex items-center justify-between pt-1">
+              <button
+                type="button"
+                onClick={handleTestGemini}
+                disabled={testingGemini || !geminiKey}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-50 transition-colors"
+              >
+                {testingGemini && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>Uji Koneksi Gemini</span>
+              </button>
+
+              {geminiTestResult && (
+                <div
+                  className={`text-[11px] font-semibold flex items-center gap-1 ${
+                    geminiTestResult.ok ? 'text-emerald-700' : 'text-red-600'
+                  }`}
+                >
+                  {geminiTestResult.ok ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  )}
+                  <span className="truncate max-w-[220px]">{geminiTestResult.message}</span>
+                </div>
+              )}
+            </div>
             <p className="text-[11px] text-slate-500">
-              Digunakan untuk model <strong>Gemini 1.5 Flash</strong> membaca dokumen PDF/scan hasil lab secara otomatis.
+              Mendukung otomatis model <strong>Gemini Flash</strong> (2.0 / 2.5 / 1.5) untuk membaca dokumen lab secara akurat.
             </p>
           </div>
 

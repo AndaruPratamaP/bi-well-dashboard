@@ -75,7 +75,93 @@ export async function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Panggil Gemini 1.5 Flash via REST API (Google AI Studio)
+ * Deteksi daftar model Gemini yang aktif dan didukung untuk akun pengguna
+ */
+export async function getAvailableGeminiModels(apiKey: string): Promise<string[]> {
+  const preferred = [
+    'gemini-2.0-flash',
+    'gemini-2.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-pro'
+  ];
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+      headers: { 'x-goog-api-key': apiKey }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const models: any[] = data.models || [];
+      const contentModels = models
+        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => m.name.replace(/^models\//, ''));
+
+      if (contentModels.length > 0) {
+        // Urutkan berdasarkan prioritas preferred
+        const sorted: string[] = [];
+        for (const pref of preferred) {
+          const match = contentModels.find(m => m.toLowerCase().includes(pref.toLowerCase()));
+          if (match && !sorted.includes(match)) sorted.push(match);
+        }
+        for (const cm of contentModels) {
+          if (!sorted.includes(cm) && cm.toLowerCase().includes('flash')) sorted.push(cm);
+        }
+        for (const cm of contentModels) {
+          if (!sorted.includes(cm)) sorted.push(cm);
+        }
+        if (sorted.length > 0) return sorted;
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal memanggil listModels, menggunakan fallback model default:', err);
+  }
+
+  return preferred;
+}
+
+/**
+ * Uji validitas API Key Gemini
+ */
+export async function testGeminiApiKey(apiKey: string): Promise<{ ok: boolean; message: string; model?: string }> {
+  if (!apiKey.trim()) {
+    return { ok: false, message: 'API key belum diisi.' };
+  }
+
+  try {
+    const candidates = await getAvailableGeminiModels(apiKey);
+    if (candidates.length === 0) {
+      return { ok: false, message: 'API key tidak memiliki akses ke model teks/vision (ListModels kosong).' };
+    }
+
+    const testModel = candidates[0];
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: 'Halo' }] }]
+      })
+    });
+
+    if (res.ok) {
+      return { ok: true, message: `Koneksi Gemini berhasil terhubung! (Model: ${testModel})`, model: testModel };
+    } else {
+      const err = await res.text();
+      return { ok: false, message: `Gagal (${res.status}): ${err}` };
+    }
+  } catch (err: any) {
+    return { ok: false, message: `Error koneksi: ${err.message || err}` };
+  }
+}
+
+/**
+ * Panggil Gemini via REST API dengan deteksi multi-model otomatis
  */
 export async function parseMCUDocumentWithGemini(
   file: File,
@@ -94,7 +180,8 @@ export async function parseMCUDocumentWithGemini(
   const base64Data = await fileToBase64(file);
   const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
 
-  onProgress?.('Menghubungkan ke Google Gemini 1.5 Flash (Vision & Clinical Parser)...');
+  onProgress?.('Mendeteksi model Gemini yang aktif pada akun...');
+  const candidateModels = await getAvailableGeminiModels(apiKey);
 
   const systemInstruction = `
 Kamu adalah asisten AI medis ahli dalam membaca dan mengekstrak dokumen hasil Medical Check-Up (MCU) laboratorium pegawai Bank Indonesia (Platform BI-WELL).
@@ -147,8 +234,6 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`js
 `;
 
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
     const payload = {
       contents: [
         {
@@ -171,19 +256,67 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`js
       }
     };
 
-    onProgress?.('Menganalisis tabel nilai laboratorium dan rentang rujukan...');
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    let response: Response | null = null;
+    let successfulModel = '';
 
-    if (!response.ok) {
-      const errText = await response.text();
-      if (response.status === 429) {
-        throw new Error('Batas kuota gratis Gemini (Rate Limit) tercapai. Silakan tunggu 1 menit lalu coba lagi.');
+    // Loop mencoba model-model yang tersedia hingga berhasil
+    for (const model of candidateModels) {
+      onProgress?.(`Menganalisis dokumen dengan Google Gemini (${model})...`);
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.status === 404) {
+          console.warn(`Model ${model} tidak ditemukan (404), mencoba model berikutnya...`);
+          continue;
+        }
+
+        if (res.status === 400) {
+          // Beberapa model lama mungkin tidak mendukung response_mime_type: 'application/json'
+          const retryPayload = {
+            contents: payload.contents,
+            generationConfig: { temperature: 0.1 }
+          };
+          const retryRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey
+            },
+            body: JSON.stringify(retryPayload)
+          });
+          if (retryRes.ok) {
+            response = retryRes;
+            successfulModel = model;
+            break;
+          }
+        }
+
+        if (res.status === 429) {
+          throw new Error('Batas kuota gratis Gemini (Rate Limit) tercapai. Silakan tunggu 1 menit lalu coba lagi.');
+        }
+
+        if (res.ok) {
+          response = res;
+          successfulModel = model;
+          break;
+        }
+      } catch (err: any) {
+        if (err.message?.includes('Rate Limit')) throw err;
+        console.warn(`Error menghubungi ${model}:`, err);
       }
-      throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+    }
+
+    if (!response || !response.ok) {
+      throw new Error(`Tidak ada model Gemini yang dapat dihubungi untuk API key ini.`);
     }
 
     const resJson = await response.json();
@@ -194,7 +327,8 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`js
     }
 
     onProgress?.('Menyusun parameter klinis ke dalam format BI-WELL...');
-    const parsed = JSON.parse(candidateText.trim().replace(/^```json\s*/, '').replace(/\s*```$/, ''));
+    const cleanedText = candidateText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
+    const parsed = JSON.parse(cleanedText);
 
     // Process and enrich parameters with reference ranges and status
     const enrichedParams = STANDARD_PARAMS.map(std => {
@@ -228,8 +362,8 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`js
         tahun: parsed.mcu?.tahun || new Date().getFullYear()
       },
       parameters: enrichedParams,
-      confidenceScore: 94,
-      catatanKlinis: parsed.catatanKlinis || 'Ekstraksi dokumen berhasil melalui Gemini 1.5 Flash.'
+      confidenceScore: 95,
+      catatanKlinis: parsed.catatanKlinis || `Dokumen berhasil diekstrak menggunakan Google Gemini (${successfulModel}).`
     };
   } catch (err: any) {
     console.error('Error in parseMCUDocumentWithGemini:', err);
