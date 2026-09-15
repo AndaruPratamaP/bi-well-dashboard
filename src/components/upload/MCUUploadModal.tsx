@@ -3,9 +3,12 @@ import {
   X,
   UploadCloud,
   FileText,
+  FileX,
   Sparkles,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
+  Info,
   Database,
   Key,
   ShieldCheck,
@@ -17,7 +20,8 @@ import {
   parseMCUDocumentWithGemini,
   ExtractedMCUData,
   getGeminiApiKey,
-  generateSimulatedExtraction
+  generateSimulatedExtraction,
+  InvalidDocumentError
 } from '../../lib/geminiParser';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { useMCUData } from '../../context/MCUDataContext';
@@ -38,11 +42,12 @@ export const MCUUploadModal: React.FC<MCUUploadModalProps> = ({
 }) => {
   const { addMCURecord, totalEmployeesCount } = useMCUData();
 
-  const [step, setStep] = useState<'upload' | 'scanning' | 'review' | 'success'>('upload');
+  const [step, setStep] = useState<'upload' | 'scanning' | 'review' | 'success' | 'rejected'>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [extractedData, setExtractedData] = useState<ExtractedMCUData | null>(null);
   const [scanMessage, setScanMessage] = useState<string>('Memulai pemindaian...');
+  const [rejectionReason, setRejectionReason] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [savedNip, setSavedNip] = useState<string>('');
   const [savedName, setSavedName] = useState<string>('');
@@ -61,6 +66,7 @@ export const MCUUploadModal: React.FC<MCUUploadModalProps> = ({
     setFile(null);
     setExtractedData(null);
     setScanMessage('');
+    setRejectionReason('');
     setIsSaving(false);
   };
 
@@ -73,7 +79,7 @@ export const MCUUploadModal: React.FC<MCUUploadModalProps> = ({
   const processFile = async (selectedFile: File) => {
     setFile(selectedFile);
     setStep('scanning');
-    setScanMessage('Membaca berkas dokumen MCU...');
+    setScanMessage('Memvalidasi dan menganalisis berkas dokumen...');
 
     try {
       const result = await parseMCUDocumentWithGemini(selectedFile, msg => {
@@ -83,10 +89,12 @@ export const MCUUploadModal: React.FC<MCUUploadModalProps> = ({
       setStep('review');
     } catch (err: any) {
       console.error('Scan error:', err);
-      // Fallback to simulated
-      const fallback = generateSimulatedExtraction(selectedFile.name);
-      setExtractedData(fallback);
-      setStep('review');
+      const isInvalidDoc = err instanceof InvalidDocumentError || err.name === 'InvalidDocumentError';
+      const reasonMsg = isInvalidDoc
+        ? err.message
+        : `Pemeriksaan dokumen tidak dapat diselesaikan: ${err.message || 'Format berkas tidak sesuai atau terjadi kendala saat verifikasi.'}`;
+      setRejectionReason(reasonMsg);
+      setStep('rejected');
     }
   };
 
@@ -122,7 +130,14 @@ export const MCUUploadModal: React.FC<MCUUploadModalProps> = ({
     const dummyFile = new File(['Dummy Lab Result'], 'Hasil_Lab_MCU_Prodia_2026.pdf', {
       type: 'application/pdf'
     });
-    processFile(dummyFile);
+    setFile(dummyFile);
+    setStep('scanning');
+    setScanMessage('Memproses dokumen contoh lab MCU...');
+    setTimeout(() => {
+      const fallback = generateSimulatedExtraction(dummyFile.name);
+      setExtractedData(fallback);
+      setStep('review');
+    }, 1000);
   };
 
   // Handle final submission from DocumentReview
@@ -415,6 +430,81 @@ export const MCUUploadModal: React.FC<MCUUploadModalProps> = ({
                     type="button"
                     onClick={handleClose}
                     className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 5: Document Rejected (Not an MCU file or invalid) */}
+            {step === 'rejected' && (
+              <div className="py-10 flex flex-col items-center justify-center text-center space-y-6 animate-fade-in">
+                <div className="w-20 h-20 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-sm">
+                  <FileX className="w-10 h-10 text-red-600" />
+                </div>
+
+                <div className="space-y-2 max-w-lg">
+                  <span className="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                    Validasi Medis Gagal
+                  </span>
+                  <h3 className="text-lg font-bold text-slate-900 mt-2">
+                    Dokumen Ditolak: Bukan Berkas MCU yang Sah
+                  </h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    AI mendeteksi bahwa berkas yang Anda unggah tidak memenuhi kriteria dokumen rekam medis atau lembar laboratorium MCU pegawai.
+                  </p>
+                </div>
+
+                {/* Reason Card */}
+                <div className="w-full max-w-lg bg-red-50/60 border border-red-200 rounded-2xl p-4 text-xs text-left space-y-2.5">
+                  <div className="flex items-center gap-2 font-bold text-red-900 pb-2 border-b border-red-200/60">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>Hasil Analisis AI:</span>
+                  </div>
+                  <p className="text-xs text-red-800 leading-relaxed font-medium">
+                    {rejectionReason}
+                  </p>
+                  <div className="text-[11px] text-slate-500 pt-1 border-t border-red-200/40">
+                    Berkas: <strong>{file?.name}</strong> ({file ? `${(file.size / 1024).toFixed(1)} KB` : ''})
+                  </div>
+                </div>
+
+                {/* Guidance Card */}
+                <div className="w-full max-w-lg bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-600 text-left flex items-start gap-2.5">
+                  <Info className="w-4 h-4 text-bi-900 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block text-slate-800">Kriteria Dokumen yang Didukung:</span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5">
+                      Unggah berkas PDF atau foto scan hasil laboratorium resmi (seperti Prodia, Kimia Farma, atau RS rekanan) yang memuat nama pasien dan nilai parameter medis (Hematologi, Kimia Darah, atau Tanda Vital).
+                    </span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleResetModal}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white bg-bi-900 hover:bg-bi-800 rounded-xl shadow transition-all"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    <span>Pilih Berkas MCU Lain</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleFastDemo}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-bi-900" />
+                    <span>Uji Contoh Lab Medis Cepat</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="px-4 py-2.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
                   >
                     Tutup
                   </button>

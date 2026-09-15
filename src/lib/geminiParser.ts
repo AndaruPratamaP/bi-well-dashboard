@@ -74,6 +74,13 @@ export async function fileToBase64(file: File): Promise<string> {
   });
 }
 
+export class InvalidDocumentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidDocumentError';
+  }
+}
+
 /**
  * Deteksi daftar model Gemini yang aktif dan didukung untuk akun pengguna
  */
@@ -161,7 +168,7 @@ export async function testGeminiApiKey(apiKey: string): Promise<{ ok: boolean; m
 }
 
 /**
- * Panggil Gemini via REST API dengan deteksi multi-model otomatis
+ * Panggil Gemini via REST API dengan deteksi multi-model otomatis dan validasi dokumen medis
  */
 export async function parseMCUDocumentWithGemini(
   file: File,
@@ -169,14 +176,12 @@ export async function parseMCUDocumentWithGemini(
 ): Promise<ExtractedMCUData> {
   const apiKey = getGeminiApiKey();
 
-  // Jika tidak ada API Key, tawarkan simulated extraction untuk demo instan
+  // Jika tidak ada API Key, beritahu pengguna secara jelas
   if (!apiKey) {
-    onProgress?.('API Key tidak ditemukan. Mengaktifkan mode simulasi AI ekstraksi cerdas...');
-    await new Promise(r => setTimeout(r, 1800));
-    return generateSimulatedExtraction(file.name);
+    throw new Error('API Key Google Gemini belum diatur. Buka menu Konfigurasi API untuk memasukkan kunci gratis Anda.');
   }
 
-  onProgress?.('Mempersiapkan dokumen & mengonversi data medis...');
+  onProgress?.('Mempersiapkan berkas & mengonversi data dokumen...');
   const base64Data = await fileToBase64(file);
   const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
 
@@ -184,38 +189,52 @@ export async function parseMCUDocumentWithGemini(
   const candidateModels = await getAvailableGeminiModels(apiKey);
 
   const systemInstruction = `
-Kamu adalah asisten AI medis ahli dalam membaca dan mengekstrak dokumen hasil Medical Check-Up (MCU) laboratorium pegawai Bank Indonesia (Platform BI-WELL).
-Tugasmu adalah membaca teks, tabel, dan angka hasil lab pada dokumen yang diberikan, lalu memetakannya secara presisi ke dalam struktur JSON terstandar.
+Kamu adalah sistem AI verifikator dan ekstraktor rekam medis laboratorium Medical Check-Up (MCU) pegawai Bank Indonesia (Platform BI-WELL).
 
-Parameter yang WAJIB dicari (jika ada):
-1. P01: BMI (Body Mass Index)
-2. P02: Sistolik (Tekanan darah atas, mmHg)
-3. P03: Diastolik (Tekanan darah bawah, mmHg)
-4. H01: Leukosit / White Blood Cell (WBC, ribu/uL atau 10^3/uL)
-5. H02: Hemoglobin / Hb (g/dL)
-6. H03: Trombosit / Platelet (PLT, ribu/uL atau 10^3/uL)
-7. K01: Kolesterol Total (mg/dL)
-8. K02: Glukosa Puasa / Fasting Blood Sugar (GDP, mg/dL)
-9. K03: Asam Urat / Uric Acid (mg/dL)
-10. K04: SGOT / AST (U/L)
-11. K05: SGPT / ALT (U/L)
+TAHAP 1: VALIDASI KEASLIAN DOKUMEN MEDIS / LAB
+Periksa berkas yang diberikan dengan sangat teliti. Apakah berkas ini benar-benar merupakan dokumen rekam medis, lembar hasil laboratorium darah/urin/klinis, atau hasil Medical Check-Up (MCU)?
+
+JIKA DOKUMEN INI BUKAN DOKUMEN MEDIS / BUKAN HASIL LAB MCU:
+(Contoh berkas yang BUKAN MCU: faktur/invoice pembayaran, struk belanja, surat lamaran/CV, KTP/SIM/paspor saja, foto selfie/wajah, foto pemandangan, meme/gambar ilustrasi acak, dokumen hukum/finansial, sertifikat pelatihan, dokumen teks non-kesehatan, dsb.)
+MAKA KAMU WAJIB MENOLAKNYA DAN HANYA MENGEMBALIKAN OUTPUT JSON PERSIS SEPERTI INI:
+{
+  "isValidMCUDocument": false,
+  "rejectionReason": "Penjelasan singkat spesifik mengapa berkas ditolak (misal: 'Berkas terdeteksi sebagai faktur belanja / bukan lembar rekam medis laboratorium MCU.')"
+}
+
+JIKA DOKUMEN INI VALID SEBAGAI HASIL LAB / MCU MEDIS:
+Ekstrak parameter yang BENAR-BENAR TERCANTUM pada dokumen. JANGAN PERNAH MENGARANG PARAMETER ATAU NILAI YANG TIDAK ADA!
+
+11 Parameter yang dicari:
+- P01: BMI (Body Mass Index)
+- P02: Sistolik (Tekanan darah atas, mmHg)
+- P03: Diastolik (Tekanan darah bawah, mmHg)
+- H01: Leukosit / White Blood Cell (WBC, ribu/uL atau 10^3/uL)
+- H02: Hemoglobin / Hb (g/dL)
+- H03: Trombosit / Platelet (PLT, ribu/uL atau 10^3/uL)
+- K01: Kolesterol Total (mg/dL)
+- K02: Glukosa Puasa / Fasting Blood Sugar (GDP, mg/dL)
+- K03: Asam Urat / Uric Acid (mg/dL)
+- K04: SGOT / AST (U/L)
+- K05: SGPT / ALT (U/L)
 
 Untuk data pegawai:
-- NIP: Ambil jika tertera, jika tidak tertera buat NIP 6 digit unik (contoh: 100037).
-- Nama: Ambil nama lengkap pasien/pegawai.
-- Jenis Kelamin: 'L' untuk Laki-laki atau 'P' untuk Perempuan.
-- Tanggal Lahir: Format YYYY-MM-DD (jika hanya usia tertera, perkirakan dari tahun 2026).
-- Departemen: Pilih salah satu dari ['BINS', 'DEIH', 'DPD', 'DSDM', 'DKEM', 'DKOM']. Jika tidak ada, default 'DSDM'.
-- Tanggal MCU: Format YYYY-MM-DD.
+- NIP: Ambil HANYA jika tercantum di dokumen. Jika tidak ada, isi null.
+- Nama: Ambil nama lengkap pasien/pegawai jika tertera di dokumen. Jika tidak ada, isi null.
+- Jenis Kelamin: 'L' atau 'P' (atau null jika tidak tertera).
+- Tanggal Lahir: YYYY-MM-DD (atau null jika tidak tertera).
+- Departemen: Ambil jika ada, salah satu dari ['BINS', 'DEIH', 'DPD', 'DSDM', 'DKEM', 'DKOM']. Jika tidak ada, isi null.
+- Tanggal MCU: YYYY-MM-DD (jika tidak ada gunakan tanggal hari ini).
 
-FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`json:
+FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK:
 {
+  "isValidMCUDocument": true,
   "pegawai": {
-    "nip": "string",
-    "nama": "string",
-    "jenisKelamin": "L" | "P",
-    "tanggalLahir": "YYYY-MM-DD",
-    "departemen": "BINS" | "DEIH" | "DPD" | "DSDM" | "DKEM" | "DKOM"
+    "nip": "string atau null",
+    "nama": "string atau null",
+    "jenisKelamin": "L" | "P" | null,
+    "tanggalLahir": "YYYY-MM-DD atau null",
+    "departemen": "BINS" | "DEIH" | "DPD" | "DSDM" | "DKEM" | "DKOM" | null
   },
   "mcu": {
     "tanggalMcu": "YYYY-MM-DD",
@@ -229,7 +248,7 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`js
       "satuan": "mg/dL"
     }
   ],
-  "catatanKlinis": "Catatan singkat dokter faskes jika ada"
+  "catatanKlinis": "Catatan singkat dokter / faskes yang tertera pada dokumen"
 }
 `;
 
@@ -330,9 +349,22 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`js
     const cleanedText = candidateText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '');
     const parsed = JSON.parse(cleanedText);
 
+    // 1. Validasi penolakan dokumen dari AI
+    if (parsed.isValidMCUDocument === false) {
+      const reason = parsed.rejectionReason || 'Berkas yang diunggah terdeteksi bukan merupakan dokumen rekam medis atau lembar laboratorium MCU.';
+      throw new InvalidDocumentError(reason);
+    }
+
+    const foundParams: any[] = Array.isArray(parsed.parameters) ? parsed.parameters : [];
+
+    // 2. Jika tidak ada parameter medis terdeteksi dan nama pasien kosong, tolak sebagai bukan dokumen lab
+    if (foundParams.length === 0 && !parsed.pegawai?.nama) {
+      throw new InvalidDocumentError('Berkas yang diunggah tidak memuat indikator parameter pemeriksaan laboratorium medis atau data rekam kesehatan MCU.');
+    }
+
     // Process and enrich parameters with reference ranges and status
     const enrichedParams = STANDARD_PARAMS.map(std => {
-      const found = (parsed.parameters || []).find(
+      const found = foundParams.find(
         (p: any) => p.idParam === std.idParam || p.nama?.toLowerCase().includes(std.nama.toLowerCase())
       );
 
@@ -349,13 +381,19 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`js
       };
     });
 
+    const empNip = parsed.pegawai?.nip && parsed.pegawai.nip !== 'null' ? String(parsed.pegawai.nip) : `1000${Math.floor(10 + Math.random() * 89)}`;
+    const empNama = parsed.pegawai?.nama && parsed.pegawai.nama !== 'null' ? String(parsed.pegawai.nama) : 'Pegawai Baru';
+    const empGender = parsed.pegawai?.jenisKelamin === 'P' ? 'P' : 'L';
+    const empBirth = parsed.pegawai?.tanggalLahir && parsed.pegawai.tanggalLahir !== 'null' ? String(parsed.pegawai.tanggalLahir) : '1990-05-15';
+    const empDept = parsed.pegawai?.departemen && parsed.pegawai.departemen !== 'null' ? String(parsed.pegawai.departemen) : 'DSDM';
+
     return {
       pegawai: {
-        nip: parsed.pegawai?.nip || `1000${Math.floor(10 + Math.random() * 89)}`,
-        nama: parsed.pegawai?.nama || 'Pegawai Baru',
-        jenisKelamin: parsed.pegawai?.jenisKelamin === 'P' ? 'P' : 'L',
-        tanggalLahir: parsed.pegawai?.tanggalLahir || '1990-05-15',
-        departemen: parsed.pegawai?.departemen || 'DSDM'
+        nip: empNip,
+        nama: empNama,
+        jenisKelamin: empGender,
+        tanggalLahir: empBirth,
+        departemen: empDept
       },
       mcu: {
         tanggalMcu: parsed.mcu?.tanggalMcu || new Date().toISOString().split('T')[0],
@@ -363,13 +401,15 @@ FORMAT OUTPUT WAJIB HANYA BERUPA JSON MURNI (VALID JSON) TANPA BACKTICK \`\`\`js
       },
       parameters: enrichedParams,
       confidenceScore: 95,
-      catatanKlinis: parsed.catatanKlinis || `Dokumen berhasil diekstrak menggunakan Google Gemini (${successfulModel}).`
+      catatanKlinis: parsed.catatanKlinis || `Dokumen berhasil diverifikasi dan diekstrak menggunakan Google Gemini (${successfulModel}).`
     };
   } catch (err: any) {
     console.error('Error in parseMCUDocumentWithGemini:', err);
-    onProgress?.(`Pemberitahuan: ${err.message}. Mengalihkan ke hasil simulasi cerdas agar proses tetap berjalan...`);
-    await new Promise(r => setTimeout(r, 1500));
-    return generateSimulatedExtraction(file.name);
+    // Jika dokumen ditolak karena bukan berkas MCU atau error lain, LEMPAR error ke antarmuka pengguna
+    if (err instanceof InvalidDocumentError || err.name === 'InvalidDocumentError') {
+      throw err;
+    }
+    throw err;
   }
 }
 
