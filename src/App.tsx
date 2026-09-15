@@ -6,6 +6,7 @@ import { LoginPortal } from './components/auth/LoginPortal';
 import { AuthUser } from './types/auth';
 import { ShieldCheck, HeartPulse } from 'lucide-react';
 import { MCUDataProvider } from './context/MCUDataContext';
+import { BIWellChatbot } from './components/chat/BIWellChatbot';
 
 const STORAGE_KEY = 'bi_well_user_session';
 
@@ -115,6 +116,13 @@ const AppContent: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Floating AI Chatbot (Option C: Hybrid Copilot) */}
+      <BIWellChatbot
+        activeYear={selectedYear}
+        currentUser={currentUser}
+        selectedNip={selectedNip}
+      />
     </div>
   );
 };
