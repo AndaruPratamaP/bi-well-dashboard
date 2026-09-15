@@ -150,6 +150,22 @@ export const BIWellChatbot: React.FC<BIWellChatbotProps> = ({
       setMessages(prev => [...prev, aiMsg]);
     } catch (err: any) {
       console.error('Chat error:', err);
+      const isApiKeyError =
+        err.message?.includes('API_KEY_INVALID') ||
+        err.message?.includes('API key not valid') ||
+        err.message?.toLowerCase().includes('api key is invalid');
+
+      if (isApiKeyError) {
+        const errorMsg: ChatMessage = {
+          id: `ai-err-${Date.now()}`,
+          sender: 'assistant',
+          text: `⚠️ **Kunci API Tidak Valid**: Google AI Studio menolak API Key yang tersimpan.\n\nSilakan klik tombol ikon kunci (🔑) di pojok kanan atas chat untuk memasukkan API Key baru yang aktif dari [aistudio.google.com](https://aistudio.google.com/app/apikey).`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, errorMsg]);
+        return;
+      }
+
       const isLimit =
         err.message?.includes('429') ||
         err.message?.toLowerCase().includes('quota') ||
@@ -163,9 +179,7 @@ export const BIWellChatbot: React.FC<BIWellChatbotProps> = ({
           fallbackResponse +
           '\n\n---\n> ⚠️ **Catatan Kuota AI**: *Batas permintaan per menit (15 RPM) akun Google AI Studio sedang cooling down. Jawaban di atas disajikan langsung dari basis data internal BI-WELL agar demonstrasi tetap berjalan lancar. Kuota akan pulih otomatis dalam ~60 detik, atau Anda dapat memasukkan API Key cadangan di ikon 🔑 di atas.*';
       } else {
-        fallbackText =
-          fallbackResponse +
-          '\n\n---\n> ℹ️ *Catatan: Jawaban di atas disajikan dari basis pengetahuan cerdas BI-WELL (layanan AI dialihkan ke sistem cadangan internal).*';
+        fallbackText = fallbackResponse;
       }
 
       const fallbackMsg: ChatMessage = {

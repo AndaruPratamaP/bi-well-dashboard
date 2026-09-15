@@ -168,17 +168,62 @@ export async function sendChatMessageToGemini(
 
   for (const model of candidateModels) {
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      // 1. Coba payload standar dengan system_instruction (format snake_case sesuai REST spec Google)
+      const payload = {
+        contents,
+        system_instruction: {
+          parts: [{ text: systemInstruction }]
+        },
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 1200,
+          topP: 0.95
+        }
+      };
+
+      let response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify(payload)
+      });
+
+      // 2. Jika status 400 (beberapa model/endpoint tidak mendukung system_instruction terpisah), coba payload tanpa system_instruction
+      if (response.status === 400) {
+        const altPayload = {
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: `[PANDUAN SISTEM BI-WELL]:\n${systemInstruction}\n\n[PERTANYAAN PENGGUNA]:\n${turnsToSend[0].text}`
+                }
+              ]
+            },
+            ...turnsToSend.slice(1).map(msg => ({
+              role: msg.sender === 'user' ? 'user' : 'model',
+              parts: [{ text: msg.text }]
+            }))
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 1200
+          }
+        };
+
+        response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-goog-api-key': apiKey
           },
-          body: JSON.stringify(payload)
-        }
-      );
+          body: JSON.stringify(altPayload)
+        });
+      }
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
@@ -217,6 +262,7 @@ export async function sendChatMessageToGemini(
 export function getOfflineDemoResponse(query: string, year: number = 2026): string {
   const lower = query.toLowerCase();
 
+  // 1. Klasifikasi Klaster
   if (lower.includes('klaster') || lower.includes('kelas') || lower.includes('a-d')) {
     return `### Klasifikasi Klaster Kesehatan Pegawai (Kelas A - D)
 Sistem **BI-WELL** mengelompokkan kondisi kesehatan pegawai secara objektif berdasarkan jumlah parameter laboratorium yang berada di luar rentang rujukan:
@@ -227,6 +273,7 @@ Sistem **BI-WELL** mengelompokkan kondisi kesehatan pegawai secara objektif berd
 * **Kelas D (Risiko Tinggi / Perhatian Khusus)**: Lebih dari 3 parameter di luar rujukan. Memerlukan atensi khusus dan evaluasi klinis mendalam oleh Dokter Faskes BI.`;
   }
 
+  // 2. Ringkasan Statistik
   if (lower.includes('ringkasan') || lower.includes('2026') || lower.includes('populasi') || lower.includes('statistik')) {
     return `### Ringkasan Kesehatan Pegawai Bank Indonesia (${year})
 Berdasarkan data terkini pada dashboard:
@@ -240,19 +287,52 @@ Berdasarkan data terkini pada dashboard:
 * **Temuan Utama**: Sebagian besar catatan luar rujukan didominasi oleh indikator Profil Lipid (Kolesterol Total) dan Asam Urat.`;
   }
 
-  if (lower.includes('kolesterol') || lower.includes('asam urat') || lower.includes('gula') || lower.includes('tips') || lower.includes('makan')) {
+  // 3. Diabetes & Gula Darah Puasa (GDP)
+  if (
+    lower.includes('diabetes') ||
+    lower.includes('gula darah') ||
+    lower.includes('gdp') ||
+    lower.includes('glukosa') ||
+    lower.includes('kencing manis')
+  ) {
+    return `### Panduan Pengendalian Diabetes & Gula Darah
+Pada pemeriksaan MCU BI-WELL, parameter **Glukosa Darah Puasa (GDP / K02)** memiliki rentang rujukan normal **70.0 - 100.0 mg/dL**.
+
+Jika Anda memiliki indikasi diabetes atau gula darah tinggi, berikut langkah-langkah yang dianjurkan:
+
+1. **Konsultasi ke Dokter Faskes Bank Indonesia**:
+   - Segera jadwalkan evaluasi klinis di faskes BI untuk pemeriksaan **HbA1c** (rata-rata kontrol gula darah 3 bulan terakhir) dan evaluasi resep obat antidiabetes jika diperlukan.
+
+2. **Pengaturan Pola Makan (Diet Rendah Glikemik)**:
+   - **Batasi Karbohidrat Sederhana**: Kurangi porsi nasi putih, mie, dan roti putih. Ganti dengan karbohidrat kompleks berserat tinggi (beras merah, oatmeal, ubi).
+   - **Hindari Minuman Manis**: Stop minuman bersirup, boba, soda, dan camilan tinggi gula.
+   - **Porsi Piring Sehat**: Setengah piring sayuran hijau berserat, seperempat piring protein tanpa lemak (ikan, tahu, tempe, dada ayam), dan seperempat piring karbohidrat kompleks.
+
+3. **Aktivitas Fisik Teratur**:
+   - Otot yang aktif dapat menyerap glukosa secara mandiri tanpa membebani pankreas.
+   - Lakukan jalan cepat atau aerobik ringan minimal 30 menit sehari (150 menit per minggu).
+
+4. **Kontrol Berat Badan & Manajemen Stres**:
+   - Penurunan 5–10% berat badan pada individu dengan berat berlebih terbukti signifikan meningkatkan sensitivitas insulin.
+   - Cukupi waktu tidur 7–8 jam per malam untuk menjaga kestabilan hormon metabolisme.
+
+*Catatan: Panduan ini bersifat edukatif. Jangan mengubah atau menghentikan obat diabetes tanpa persetujuan dokter.*`;
+  }
+
+  // 4. Kolesterol & Asam Urat
+  if (lower.includes('kolesterol') || lower.includes('asam urat') || lower.includes('purin') || lower.includes('lipid')) {
     return `### Rekomendasi Pengendalian Kolesterol & Asam Urat
 Berikut panduan praktis berbasis pedoman kesehatan kerja Bank Indonesia:
 
-1. **Pengendalian Kolesterol Total**:
+1. **Pengendalian Kolesterol Total (K01, Rujukan < 200 mg/dL)**:
    - Kurangi konsumsi lemak jenuh & lemak trans (gorengan, jeroan, santan pekat, kuning telur berlebih).
    - Perbanyak asupan serat larut (*soluble fiber*) dari oatmeal, apel, pepaya, dan sayuran hijau.
    - Ganti sumber lemak jahat dengan lemak baik (alpukat, kacang almond, minyak zaitun).
 
-2. **Pengendalian Asam Urat (*Uric Acid*)**:
-   - Batasi makanan tinggi purin (daging merah, emping melinjo, kerang, seafood olahan, dan ekstrak ragi).
-   - Cukupi kebutuhan air putih minimal 2 - 2.5 liter per hari untuk membantu ginjal melarutkan dan mengeluarkan asam urat.
-   - Hindari konsumsi minuman berpemanis sirup fruktosa tinggi dan soda.
+2. **Pengendalian Asam Urat (K03, Rujukan 3.4 - 7.0 mg/dL)**:
+   - Batasi makanan tinggi purin (daging merah, emping melinjo, kerang, seafood olahan, dan jeroan).
+   - Cukupi kebutuhan air putih minimal 2 - 2.5 liter per hari untuk membantu ginjal melarutkan dan mengeluarkan asam urat melalui urin.
+   - Hindari konsumsi minuman berpemanis sirup fruktosa tinggi dan alkohol.
 
 3. **Aktivitas Fisik & Istirahat**:
    - Lakukan aktivitas aerobik ringan minimal 30 menit sehari (150 menit per minggu).
@@ -261,6 +341,7 @@ Berikut panduan praktis berbasis pedoman kesehatan kerja Bank Indonesia:
 *Catatan: Informasi ini bersifat edukatif. Tetap konsultasikan dengan Dokter Faskes Bank Indonesia untuk rekomendasi medis spesifik.*`;
   }
 
+  // 5. Analisis Departemen
   if (lower.includes('departemen') || lower.includes('risiko tertinggi')) {
     return `### Analisis Risiko Antar Departemen (${year})
 Berdasarkan data agregat:
@@ -268,10 +349,17 @@ Berdasarkan data agregat:
 * **Rekomendasi Intervensi**: DSDM disarankan menyelenggarakan program *Corporate Wellness* seperti senam berkala, penyediaan katering sehat di lingkungan kerja, dan seminar nutrisi kerja.`;
   }
 
-  return `Halo! Saya adalah **BI-WELL AI Copilot**. Saya dapat membantu Anda dengan:
-- Menganalisis statistik populasi kesehatan pegawai BI (Klaster A-D, komparasi departemen).
-- Memberikan penjelasan edukatif mengenai 11 parameter hasil lab MCU.
-- Memberikan tips gaya hidup sehat bagi pegawai.
+  // 6. Respon Kesehatan Umum yang Relevan untuk Segala Pertanyaan
+  return `### Konsultasi Edukasi Kesehatan BI-WELL
+Terima kasih atas pertanyaan Anda mengenai **"${query}"**.
 
-*Silakan tanyakan hal yang ingin Anda ketahui atau klik salah satu tombol pertanyaan cepat di atas!*`;
+Berikut panduan kesehatan kerja umum untuk menjaga kebugaran optimal pegawai Bank Indonesia:
+1. **Periksa Indikator Lab Terkait**: Buka profil individu Anda pada dashboard BI-WELL untuk melihat apakah nilai indikator terkait (Fisik, Hematologi, atau Kimia Darah) berada dalam batas normal rujukan.
+2. **Konsultasi dengan Faskes BI**: Apabila Anda merasakan keluhan fisik atau memerlukan terapi medis, segera kunjungi klinik/dokter faskes Bank Indonesia untuk pemeriksaan klinis langsung.
+3. **Pilar Gaya Hidup Sehat**:
+   - Konsumsi makanan bergizi seimbang dengan porsi sayur dan buah yang cukup.
+   - Rutin berolahraga aerobik ringan minimal 150 menit per minggu.
+   - Minum air putih yang cukup (2–2.5 liter/hari) dan tidur berkualitas 7–8 jam.
+
+*Ingin mendalami salah satu parameter lab (misal: Gula Darah, Kolesterol, Tekanan Darah, atau BMI)? Silakan tanyakan.*`;
 }
