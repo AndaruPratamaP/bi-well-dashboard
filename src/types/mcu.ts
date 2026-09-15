@@ -87,7 +87,7 @@ export interface DepartmentRiskStats {
 }
 
 export interface AgeGroupClassStats {
-  ageGroup: '< 30' | '30 < X < 40' | '40 < X < 50' | '50 <';
+  ageGroup: '< 30' | '30 ≤ X < 40' | '40 ≤ X < 50' | '> 50';
   total: number;
   kelasACount: number;
   kelasAPct: number;

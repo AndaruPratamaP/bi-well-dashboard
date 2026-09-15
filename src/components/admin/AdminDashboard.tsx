@@ -177,7 +177,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [deptRiskStats, selectedDept]);
 
   // 3. Age Groups vs Health Classes (100% Stacked Bar Chart)
-  // Sumbu X: Usia (<30, 30<X<40, 40<X<50, 50<)
+  // Sumbu X: Usia (<30, 30 ≤ X < 40, 40 ≤ X < 50, >50)
   // Sumbu Y: Persentase orang (0 - 100%)
   // Kategori Stacked: Kelas A, Kelas B, Kelas C, Kelas D
   const ageGroupClassStats = useMemo(() => {
@@ -664,7 +664,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-500 mb-4">
-              Sumbu X mewakili kelompok usia (&lt;30, 30&lt;X&lt;40, 40&lt;X&lt;50, 50&lt;) dan sumbu Y persentase pegawai.
+              Sumbu X mewakili kelompok usia (&lt;30, 30 ≤ X &lt; 40, 40 ≤ X &lt; 50, &gt;50) dan sumbu Y persentase pegawai.
             </p>
           </div>
 

@@ -277,23 +277,23 @@ export function getDepartmentRiskDemographics(year: number, deptFilter?: string)
 
 /**
  * Calculate 100% Stacked Bar data for Age Groups vs Health Classes (Kelas A - D)
- * Sumbu X: Usia (<30, 30<X<40, 40<X<50, 50<)
+ * Sumbu X: Usia (<30, 30 ≤ X < 40, 40 ≤ X < 50, >50)
  * Sumbu Y: Persentase Pegawai (0 - 100%)
  */
 export function getAgeGroupClassDemographics(year: number, deptFilter?: string): AgeGroupClassStats[] {
   const statusList = getEmployeesStatusForYear(year, deptFilter);
-  const ageCategories: ('< 30' | '30 < X < 40' | '40 < X < 50' | '50 <')[] = [
+  const ageCategories: ('< 30' | '30 ≤ X < 40' | '40 ≤ X < 50' | '> 50')[] = [
     '< 30',
-    '30 < X < 40',
-    '40 < X < 50',
-    '50 <'
+    '30 ≤ X < 40',
+    '40 ≤ X < 50',
+    '> 50'
   ];
 
   return ageCategories.map(grp => {
     const matched = statusList.filter(s => {
       if (grp === '< 30') return s.usia < 30;
-      if (grp === '30 < X < 40') return s.usia >= 30 && s.usia < 40;
-      if (grp === '40 < X < 50') return s.usia >= 40 && s.usia < 50;
+      if (grp === '30 ≤ X < 40') return s.usia >= 30 && s.usia < 40;
+      if (grp === '40 ≤ X < 50') return s.usia >= 40 && s.usia < 50;
       return s.usia >= 50;
     });
 
