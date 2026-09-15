@@ -106,7 +106,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       },
       legend: {
         top: 'bottom',
-        data: ['Kelas A (0 Abnormal)', 'Kelas B (1 Abnormal)', 'Kelas C (2-3 Abnormal)', 'Kelas D (>3 Abnormal)'],
+        data: ['Kelas A (0 Catatan)', 'Kelas B (1 Catatan)', 'Kelas C (2-3 Catatan)', 'Kelas D (>3 Catatan)'],
         textStyle: { color: '#475569', fontSize: 11 }
       },
       grid: {
@@ -133,7 +133,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       },
       series: [
         {
-          name: 'Kelas A (0 Abnormal)',
+          name: 'Kelas A (0 Catatan)',
           type: 'bar',
           stack: 'totalDept',
           barMaxWidth: 70,
@@ -143,7 +143,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           data: aPcts
         },
         {
-          name: 'Kelas B (1 Abnormal)',
+          name: 'Kelas B (1 Catatan)',
           type: 'bar',
           stack: 'totalDept',
           barMaxWidth: 70,
@@ -153,7 +153,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           data: bPcts
         },
         {
-          name: 'Kelas C (2-3 Abnormal)',
+          name: 'Kelas C (2-3 Catatan)',
           type: 'bar',
           stack: 'totalDept',
           barMaxWidth: 70,
@@ -163,7 +163,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           data: cPcts
         },
         {
-          name: 'Kelas D (>3 Abnormal)',
+          name: 'Kelas D (>3 Catatan)',
           type: 'bar',
           stack: 'totalDept',
           barMaxWidth: 70,
@@ -226,7 +226,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       },
       legend: {
         top: 'bottom',
-        data: ['Kelas A (0 Abnormal)', 'Kelas B (1 Abnormal)', 'Kelas C (2-3 Abnormal)', 'Kelas D (>3 Abnormal)'],
+        data: ['Kelas A (0 Catatan)', 'Kelas B (1 Catatan)', 'Kelas C (2-3 Catatan)', 'Kelas D (>3 Catatan)'],
         textStyle: { color: '#475569', fontSize: 11 }
       },
       grid: {
@@ -253,7 +253,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       },
       series: [
         {
-          name: 'Kelas A (0 Abnormal)',
+          name: 'Kelas A (0 Catatan)',
           type: 'bar',
           stack: 'totalAge',
           barMaxWidth: 60,
@@ -262,7 +262,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           data: aPcts
         },
         {
-          name: 'Kelas B (1 Abnormal)',
+          name: 'Kelas B (1 Catatan)',
           type: 'bar',
           stack: 'totalAge',
           barMaxWidth: 60,
@@ -271,7 +271,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           data: bPcts
         },
         {
-          name: 'Kelas C (2-3 Abnormal)',
+          name: 'Kelas C (2-3 Catatan)',
           type: 'bar',
           stack: 'totalAge',
           barMaxWidth: 60,
@@ -280,7 +280,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           data: cPcts
         },
         {
-          name: 'Kelas D (>3 Abnormal)',
+          name: 'Kelas D (>3 Catatan)',
           type: 'bar',
           stack: 'totalAge',
           barMaxWidth: 60,
@@ -312,7 +312,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           return `
             <div class="font-bold text-slate-800 mb-1 pb-1 border-b border-slate-200">${item.nama}</div>
             <div class="text-xs text-slate-600">Kategori: <span class="font-medium">${item.kategori}</span></div>
-            <div class="text-xs text-slate-600">Kasus Abnormal: <span class="font-bold text-red-600">${item.count} orang</span></div>
+            <div class="text-xs text-slate-600">Jumlah Temuan: <span class="font-bold text-slate-800">${item.count} orang</span></div>
             <div class="text-xs text-slate-600">Prevalensi: <span class="font-semibold text-slate-800">${item.percentage}% dari populasi</span></div>
           `;
         }
@@ -341,7 +341,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       },
       series: [
         {
-          name: 'Jumlah Kasus Abnormal',
+          name: 'Jumlah Temuan di Luar Batas Rujukan',
           type: 'bar',
           data: counts,
           label: {
@@ -349,7 +349,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             position: 'right',
             color: '#0f172a',
             fontWeight: 700,
-            formatter: '{c} kasus'
+            formatter: '{c} orang'
           },
           itemStyle: {
             color: {
@@ -472,7 +472,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Ikhtisar komprehensif profil kesehatan pegawai Bank Indonesia (Anonimitas Agregat)
+            Ringkasan profil kesehatan pegawai Bank Indonesia (Anonimitas Agregat)
           </p>
         </div>
 
@@ -536,11 +536,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Pegawai Sehat Prima (Kelas A) - Self-Explanatory Metric */}
+        {/* Card 2: Pegawai Sehat (Kelas A) */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Sehat Prima (Kelas A)
+              Kelas A (Sehat)
             </span>
             <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
               <Heart className="w-5 h-5" />
@@ -553,15 +553,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </span>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            0 parameter abnormal (Fit to Work tanpa catatan)
+            0 parameter di luar rentang rujukan
           </p>
         </div>
 
-        {/* Card 3: Prevalensi Risiko Tinggi (Kelas D) */}
+        {/* Card 3: Prevalensi Risiko Perlu Perhatian (Kelas D) */}
         <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden group hover:border-red-400 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Risiko Tinggi (Kelas D)
+              Kelas D (Perlu Perhatian)
             </span>
             <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
               <AlertTriangle className="w-5 h-5" />
@@ -574,7 +574,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </span>
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            &gt;3 parameter abnormal (Perhatian khusus dokter)
+            &gt;3 parameter di luar rentang rujukan
           </p>
         </div>
 
@@ -592,28 +592,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                Kelas A (0 abn):
+                Kelas A (0 catatan):
               </span>
               <span className="font-bold text-slate-900">{kelasACount} org ({kelasAPct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                Kelas B (1 abn):
+                Kelas B (1 catatan):
               </span>
               <span className="font-bold text-slate-900">{kelasBCount} org ({kelasBPct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-                Kelas C (2-3 abn):
+                Kelas C (2-3 catatan):
               </span>
               <span className="font-bold text-slate-900">{kelasCCount} org ({kelasCPct}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-                Kelas D (&gt;3 abn):
+                Kelas D (&gt;3 catatan):
               </span>
               <span className="font-bold text-slate-900">{kelasDCount} org ({kelasDPct}%)</span>
             </div>
@@ -679,22 +679,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       </div>
 
-      {/* Visualisasi Baris 2: Top 5 Parameter Abnormalitas & Tren Tahunan (Grid 2 Kolom) */}
+      {/* Visualisasi Baris 2: Top 5 Parameter di Luar Rujukan & Tren Tahunan (Grid 2 Kolom) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Grafik 3: Top 5 Parameter Abnormalitas (Horizontal Bar Chart) */}
+        {/* Grafik 3: Top 5 Parameter di Luar Rujukan (Horizontal Bar Chart) */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-base font-bold text-slate-900">
-                Top 5 Parameter Abnormalitas
+                Top 5 Parameter di Luar Batas Rujukan
               </h2>
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-bi-50 text-bi-900 border border-bi-200">
-                Prioritas Intervensi
+                Fokus Pemantauan
               </span>
             </div>
             <p className="text-xs text-slate-500 mb-4">
-              Parameter medis dengan frekuensi kasus di luar rentang rujukan tertinggi di organisasi.
+              Parameter medis dengan frekuensi di luar rentang rujukan terbanyak di organisasi.
             </p>
           </div>
 
@@ -754,10 +754,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div>
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-600" />
-              <span>Daftar Pegawai Perlu Perhatian Khusus (Klaster Kelas D / &gt; 3 Parameter Abnormal)</span>
+              <span>Daftar Pegawai Perlu Perhatian Khusus (Klaster Kelas D / &gt; 3 Parameter di Luar Rujukan)</span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Rekomendasi tindak lanjut program konsultasi dokter spesialis & wellness coaching DSDM.
+              Rekomendasi tindak lanjut program evaluasi kesehatan DSDM.
             </p>
           </div>
 
@@ -777,9 +777,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="px-5 py-3">NIP & Nama</th>
                   <th className="px-4 py-3">Departemen</th>
                   <th className="px-4 py-3">Usia / Gender</th>
-                  <th className="px-4 py-3 text-center">Klaster & Abnormalitas</th>
-                  <th className="px-4 py-3">Parameter yang Melebihi Batas Normal</th>
-                  <th className="px-4 py-3 text-center">Status Kelayakan</th>
+                  <th className="px-4 py-3 text-center">Klaster</th>
+                  <th className="px-4 py-3 text-center">Jumlah Catatan</th>
+                  <th className="px-4 py-3">Parameter di Luar Batas Rujukan</th>
                   <th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
@@ -796,7 +796,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full font-bold bg-red-100 text-red-700 text-xs">
-                        {emp.healthClass} ({emp.abnormalCount} Parameter)
+                        {emp.healthClass}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">
+                        {emp.abnormalCount} Parameter
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -810,11 +815,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </span>
                         ))}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                        {emp.workFitnessStatus}
-                      </span>
                     </td>
                     <td className="px-5 py-3 text-right whitespace-nowrap">
                       <button

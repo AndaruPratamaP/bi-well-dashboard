@@ -6,9 +6,6 @@ import {
   ArrowDown,
   ChevronDown,
   ChevronUp,
-  CheckCircle2,
-  AlertCircle,
-  XCircle,
   Calendar,
   Building,
   Search,
@@ -358,47 +355,37 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
             </div>
           </div>
 
-          {/* Status Kelayakan MCU Badge & Klaster Pegawai */}
+          {/* Klaster Kesehatan Pegawai */}
           <div className="flex flex-col sm:items-end">
-            <span className="text-xs text-bi-200 font-medium mb-1">
-              Hasil MCU Terakhir ({selectedYear})
+            <span className="text-xs text-bi-200 font-medium mb-1.5">
+              Klaster MCU ({selectedYear})
             </span>
             <div className="flex items-center gap-2">
-              {employeeStatus?.healthClass && (
-                <span className={`px-2.5 py-1.5 rounded-xl text-xs font-black border backdrop-blur ${
-                  employeeStatus.healthClass === 'Kelas A'
-                    ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-200'
-                    : employeeStatus.healthClass === 'Kelas B'
-                    ? 'bg-blue-500/20 border-blue-400/40 text-blue-200'
-                    : employeeStatus.healthClass === 'Kelas C'
-                    ? 'bg-amber-500/20 border-amber-400/40 text-amber-200'
-                    : 'bg-red-500/20 border-red-400/40 text-red-200'
-                }`}>
-                  {employeeStatus.healthClass}
-                </span>
-              )}
-
-              {employeeStatus?.workFitnessStatus === 'Fit to Work' ? (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 backdrop-blur">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  <span className="text-sm font-extrabold text-white">Fit to Work</span>
-                </div>
-              ) : employeeStatus?.workFitnessStatus === 'Fit to Work with Note' ? (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 backdrop-blur">
-                  <AlertCircle className="w-5 h-5 text-amber-300" />
-                  <span className="text-sm font-extrabold text-white">Fit to Work with Note</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/20 border border-red-400/40 text-red-200 backdrop-blur">
-                  <XCircle className="w-5 h-5 text-red-400" />
-                  <span className="text-sm font-extrabold text-white">Unfit / Konsultasi Dokter</span>
-                </div>
-              )}
+              <div className={`px-4 py-2 rounded-xl text-base font-extrabold border backdrop-blur flex items-center gap-2.5 shadow-sm ${
+                employeeStatus?.healthClass === 'Kelas A'
+                  ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-100'
+                  : employeeStatus?.healthClass === 'Kelas B'
+                  ? 'bg-blue-500/20 border-blue-400/40 text-blue-100'
+                  : employeeStatus?.healthClass === 'Kelas C'
+                  ? 'bg-amber-500/20 border-amber-400/40 text-amber-100'
+                  : 'bg-red-500/20 border-red-400/40 text-red-100'
+              }`}>
+                <span className={`w-2.5 h-2.5 rounded-full ${
+                  employeeStatus?.healthClass === 'Kelas A'
+                    ? 'bg-emerald-400'
+                    : employeeStatus?.healthClass === 'Kelas B'
+                    ? 'bg-blue-400'
+                    : employeeStatus?.healthClass === 'Kelas C'
+                    ? 'bg-amber-400'
+                    : 'bg-red-400'
+                }`}></span>
+                <span>{employeeStatus?.healthClass || 'Kelas A'}</span>
+              </div>
             </div>
-            <span className="text-[11px] text-bi-200 mt-1">
+            <span className="text-[11px] text-bi-200 mt-1.5">
               {employeeStatus?.abnormalCount === 0
-                ? 'Semua parameter laboratorium normal'
-                : `${employeeStatus?.abnormalCount} parameter memerlukan evaluasi klinis`}
+                ? 'Semua indikator dalam rentang rujukan'
+                : `${employeeStatus?.abnormalCount} indikator di luar rentang rujukan`}
             </span>
           </div>
 
@@ -583,8 +570,8 @@ export const IndividualDashboard: React.FC<IndividualDashboardProps> = ({
                       ({catGroup.rows.length} parameter)
                     </span>
                     {categoryAbnormals > 0 && (
-                      <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-red-100 text-red-700">
-                        {categoryAbnormals} Abnormal
+                      <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-amber-100 text-amber-800">
+                        {categoryAbnormals} Catatan
                       </span>
                     )}
                   </div>

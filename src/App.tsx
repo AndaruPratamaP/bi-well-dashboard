@@ -95,12 +95,12 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Corporate Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 print:hidden">
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <HeartPulse className="w-4 h-4 text-bi-900" />
-            <span className="font-semibold text-slate-700">BI-WELL Medical Analytics System</span>
+            <span className="font-semibold text-slate-700">BI-WELL Platform Kesehatan Pegawai</span>
             <span>—</span>
             <span>Departemen Sumber Daya Manusia (DSDM) Bank Indonesia</span>
           </div>
@@ -108,7 +108,7 @@ export const App: React.FC = () => {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 text-emerald-600 font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Tersertifikasi Kerahasiaan Medis
+              Kerahasiaan Data Medis Terjaga
             </span>
             <span>© 2026 Bank Indonesia. All rights reserved.</span>
           </div>
