@@ -90,8 +90,15 @@ export const MCUUploadModal: React.FC<MCUUploadModalProps> = ({
     } catch (err: any) {
       console.error('Scan error:', err);
       const isInvalidDoc = err instanceof InvalidDocumentError || err.name === 'InvalidDocumentError';
+      const isRateLimit =
+        err.message?.includes('Rate Limit') ||
+        err.message?.includes('429') ||
+        err.message?.toLowerCase().includes('quota');
+
       const reasonMsg = isInvalidDoc
         ? err.message
+        : isRateLimit
+        ? 'Batas kuota gratis Google AI Studio (15 permintaan/menit) sedang terlampaui (Rate Limit). Silakan tunggu sekitar 60 detik agar kuota pulih otomatis, atau gunakan tombol "Uji Contoh Lab Medis Cepat" di bawah untuk demonstrasi instan tanpa memakan kuota.'
         : `Pemeriksaan dokumen tidak dapat diselesaikan: ${err.message || 'Format berkas tidak sesuai atau terjadi kendala saat verifikasi.'}`;
       setRejectionReason(reasonMsg);
       setStep('rejected');
