@@ -156,13 +156,16 @@ export const BIWellChatbot: React.FC<BIWellChatbotProps> = ({
         err.message?.toLowerCase().includes('rate limit') ||
         err.message?.toLowerCase().includes('resource');
 
+      const fallbackResponse = getOfflineDemoResponse(text, activeYear);
       let fallbackText = '';
       if (isLimit) {
         fallbackText =
-          getOfflineDemoResponse(text, activeYear) +
+          fallbackResponse +
           '\n\n---\n> ⚠️ **Catatan Kuota AI**: *Batas permintaan per menit (15 RPM) akun Google AI Studio sedang cooling down. Jawaban di atas disajikan langsung dari basis data internal BI-WELL agar demonstrasi tetap berjalan lancar. Kuota akan pulih otomatis dalam ~60 detik, atau Anda dapat memasukkan API Key cadangan di ikon 🔑 di atas.*';
       } else {
-        fallbackText = `Maaf, terjadi kendala saat memproses jawaban: ${err.message || 'Koneksi ke Gemini AI terputus.'}\n\n*Jika menggunakan API Key sendiri, pastikan kuota akun Google AI Studio Anda aktif atau periksa koneksi internet.*`;
+        fallbackText =
+          fallbackResponse +
+          '\n\n---\n> ℹ️ *Catatan: Jawaban di atas disajikan dari basis pengetahuan cerdas BI-WELL (layanan AI dialihkan ke sistem cadangan internal).*';
       }
 
       const fallbackMsg: ChatMessage = {

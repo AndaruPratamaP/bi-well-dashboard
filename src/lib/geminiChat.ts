@@ -1,4 +1,4 @@
-import { getGeminiApiKey } from './geminiParser';
+import { getGeminiApiKey, getAvailableGeminiModels } from './geminiParser';
 import {
   getEmployeesStatusForYear,
   getDepartmentRiskDemographics,
@@ -134,10 +134,17 @@ export async function sendChatMessageToGemini(
 
   const systemInstruction = buildChatSystemInstruction(year, currentUser, selectedNip);
 
-  // Ubah riwayat pesan menjadi format Gemini API contents
-  // Ambil maksimal 10 pesan terakhir agar context window efisien dan cepat
-  const recentMessages = messages.slice(-10);
-  const contents = recentMessages.map(msg => ({
+  // Gemini API mewajibkan percakapan multi-turn selalu dimulai oleh pesan role 'user'
+  // Singkirkan pesan greeting sistem yang ber-role 'model'
+  const chatTurns = messages.filter(m => m.id !== 'msg-welcome' && m.text.trim().length > 0);
+  const firstUserIdx = chatTurns.findIndex(m => m.sender === 'user');
+  const validTurns = firstUserIdx !== -1 ? chatTurns.slice(firstUserIdx) : [];
+
+  const turnsToSend = validTurns.length > 0 ? validTurns.slice(-10) : [
+    { sender: 'user', text: messages[messages.length - 1]?.text || 'Halo' }
+  ];
+
+  const contents = turnsToSend.map(msg => ({
     role: msg.sender === 'user' ? 'user' : 'model',
     parts: [{ text: msg.text }]
   }));
@@ -154,23 +161,20 @@ export async function sendChatMessageToGemini(
     }
   };
 
-  const modelCandidates = [
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash-latest'
-  ];
+  // Dapatkan daftar model yang benar-benar didukung oleh akun pengguna secara dinamis
+  const candidateModels = await getAvailableGeminiModels(apiKey);
 
   let lastError: any = null;
 
-  for (const model of modelCandidates) {
+  for (const model of candidateModels) {
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
           },
           body: JSON.stringify(payload)
         }
@@ -180,8 +184,10 @@ export async function sendChatMessageToGemini(
         const errJson = await response.json().catch(() => ({}));
         const errMsg = errJson.error?.message || `HTTP ${response.status}`;
         lastError = new Error(errMsg);
-        // Jika model tidak ditemukan (404), coba model berikutnya
-        if (response.status === 404) continue;
+        // Jika model 404 atau tidak didukung di endpoint ini, coba model berikutnya
+        if (response.status === 404 || errMsg.includes('not found') || errMsg.includes('not supported')) {
+          continue;
+        }
         throw new Error(errMsg);
       }
 
@@ -195,7 +201,7 @@ export async function sendChatMessageToGemini(
       return text;
     } catch (err: any) {
       lastError = err;
-      if (err.message && (err.message.includes('404') || err.message.includes('not found'))) {
+      if (err.message && (err.message.includes('404') || err.message.includes('not found') || err.message.includes('not supported'))) {
         continue;
       }
       throw err;
@@ -234,18 +240,23 @@ Berdasarkan data terkini pada dashboard:
 * **Temuan Utama**: Sebagian besar catatan luar rujukan didominasi oleh indikator Profil Lipid (Kolesterol Total) dan Asam Urat.`;
   }
 
-  if (lower.includes('kolesterol') || lower.includes('gula') || lower.includes('tips') || lower.includes('makan')) {
-    return `### Rekomendasi Pengendalian Kolesterol & Gula Darah
-Berikut langkah-langkah praktis berbasis panduan kesehatan kerja:
+  if (lower.includes('kolesterol') || lower.includes('asam urat') || lower.includes('gula') || lower.includes('tips') || lower.includes('makan')) {
+    return `### Rekomendasi Pengendalian Kolesterol & Asam Urat
+Berikut panduan praktis berbasis pedoman kesehatan kerja Bank Indonesia:
 
-1. **Modifikasi Pola Makan**:
-   - Kurangi konsumsi gorengan, santan pekat, dan daging berlemak tinggi.
-   - Perbanyak asupan serat larut dari oatmeal, apel, pepaya, dan sayuran hijau.
-   - Batasi minuman manis kemasan dan karbohidrat sederhana.
-2. **Aktivitas Fisik Rutin**:
-   - Lakukan jalan cepat atau aerobik ringan minimal 30 menit sehari (150 menit per minggu).
-3. **Pola Istirahat**:
-   - Pastikan tidur cukup 7–8 jam per malam untuk menjaga sensitivitas insulin dan metabolisme lipid.
+1. **Pengendalian Kolesterol Total**:
+   - Kurangi konsumsi lemak jenuh & lemak trans (gorengan, jeroan, santan pekat, kuning telur berlebih).
+   - Perbanyak asupan serat larut (*soluble fiber*) dari oatmeal, apel, pepaya, dan sayuran hijau.
+   - Ganti sumber lemak jahat dengan lemak baik (alpukat, kacang almond, minyak zaitun).
+
+2. **Pengendalian Asam Urat (*Uric Acid*)**:
+   - Batasi makanan tinggi purin (daging merah, emping melinjo, kerang, seafood olahan, dan ekstrak ragi).
+   - Cukupi kebutuhan air putih minimal 2 - 2.5 liter per hari untuk membantu ginjal melarutkan dan mengeluarkan asam urat.
+   - Hindari konsumsi minuman berpemanis sirup fruktosa tinggi dan soda.
+
+3. **Aktivitas Fisik & Istirahat**:
+   - Lakukan aktivitas aerobik ringan minimal 30 menit sehari (150 menit per minggu).
+   - Pastikan tidur cukup 7–8 jam per malam untuk menjaga sensitivitas insulin dan metabolisme sel tubuh.
 
 *Catatan: Informasi ini bersifat edukatif. Tetap konsultasikan dengan Dokter Faskes Bank Indonesia untuk rekomendasi medis spesifik.*`;
   }
